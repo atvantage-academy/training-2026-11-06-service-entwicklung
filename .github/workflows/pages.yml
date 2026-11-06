@@ -2,7 +2,8 @@
 # Swagger UI -> GitHub Pages
 # -----------------------------------------------------------------------------
 # Veröffentlicht die `openapi.yaml` aus `main` zusammen mit einer Swagger UI im
-# ATVANTAGE-Stil. Die Swagger UI liegt nicht im Repository, sondern wird zur
+# ATVANTAGE-Stil. Über einen Umschalter lassen sich zusätzlich die Stände aller
+# gemergten PRs aufrufen, die die `openapi.yaml` geändert haben. Die Swagger UI liegt nicht im Repository, sondern wird zur
 # Build-Zeit in der gepinnten Version (SWAGGER_UI_VERSION) geladen. Die
 # Oberfläche (Leiste, Theme, Logo) liegt in `pages/` neben diesem Workflow.
 #
@@ -17,6 +18,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
   pages: write
   id-token: write
 
@@ -34,6 +36,55 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Vollständig, weil die Stände der gemergten PRs aus deren
+          # Merge-Commits gelesen werden.
+          fetch-depth: 0
+
+      # Für den Umschalter: der aktuelle Stand aus `main` (vorausgewählt) und
+      # dazu jeder gemergte PR, der `openapi.yaml` geändert hat – jeweils mit
+      # der Fassung zum Zeitpunkt seines Merges. PRs, die nur Code betreffen,
+      # tauchen nicht auf.
+      - name: Stände einsammeln
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p site/specs
+          cp openapi.yaml site/specs/main.yaml
+
+          gh pr list --repo "$GITHUB_REPOSITORY" --state merged --base main --limit 500 \
+            --json number,title,url,mergedAt,mergeCommit,files \
+            --jq '[.[] | select(any(.files[]; .path == "openapi.yaml"))] | sort_by(.mergedAt) | reverse' \
+            > prs.json
+
+          : > entries.ndjson
+          for number in $(jq -r '.[].number' prs.json); do
+            sha=$(jq -r --argjson n "$number" '.[] | select(.number == $n) | .mergeCommit.oid' prs.json)
+            if ! git cat-file -e "$sha:openapi.yaml" 2>/dev/null; then
+              echo "::warning::PR #$number hat nach dem Merge keine openapi.yaml – übersprungen."
+              continue
+            fi
+            git show "$sha:openapi.yaml" > "site/specs/pr-$number.yaml"
+            jq -c --argjson n "$number" '.[] | select(.number == $n) | {
+                id: "pr-\(.number)",
+                label: "#\(.number) – \(.title)",
+                summary: "Stand nach dem Merge von PR #\(.number): \(.title)",
+                url: "specs/pr-\(.number).yaml",
+                link: .url,
+                linkText: "PR #\(.number)"
+              }' prs.json >> entries.ndjson
+          done
+
+          jq -s --arg repo "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" '{specs: ([{
+              id: "main",
+              label: "Aktueller Stand (main)",
+              summary: "Der aktuelle Stand auf main.",
+              url: "specs/main.yaml",
+              link: ($repo + "/blob/main/openapi.yaml"),
+              linkText: "main"
+            }] + .)}' entries.ndjson > site/specs.json
+          cat site/specs.json
 
       - name: Swagger UI holen und Site zusammenstellen
         run: |
@@ -53,7 +104,7 @@ jobs:
       - name: Ergebnis prüfen
         run: |
           set -euo pipefail
-          for f in index.html topbar.js swagger-theme.css swagger-ui.css swagger-ui-bundle.js openapi.yaml; do
+          for f in index.html topbar.js swagger-theme.css swagger-ui.css swagger-ui-bundle.js openapi.yaml specs.json specs/main.yaml; do
             test -s "site/$f" || { echo "FEHLER: site/$f fehlt oder ist leer"; exit 1; }
           done
           echo "Site: $(find site -type f | wc -l) Dateien"

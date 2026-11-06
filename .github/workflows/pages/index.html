@@ -29,11 +29,17 @@
       <span class="stand-bar__api">Kundenverwaltung API</span>
       <span class="stand-bar__kicker">Training Service-Entwicklung</span>
     </div>
+
+    <div class="stand-bar__switch">
+      <label class="stand-bar__label" for="stand-select">Stand</label>
+      <select class="stand-bar__select" id="stand-select" aria-describedby="stand-note">
+        <option>wird geladen …</option>
+      </select>
+    </div>
   </header>
 
-  <p class="stand-note">
-    <span class="stand-note__text">Verwaltet Kunden-Accounts.</span>
-    <a href="openapi.yaml">openapi.yaml</a>
+  <p class="stand-note" id="stand-note">
+    <span class="stand-note__text">Die Beschreibung wird geladen …</span>
   </p>
 
   <div id="swagger-ui"></div>
