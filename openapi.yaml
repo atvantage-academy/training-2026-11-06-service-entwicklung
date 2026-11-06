@@ -34,13 +34,7 @@ paths:
             type: boolean
       responses:
         "200":
-          description: Die (ggf. gefilterte) Liste der Kunden. Sie ist leer, wenn kein Kunde passt.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Customer"
+          $ref: "#/components/responses/CustomerListResponse"
         "400":
           description: Ein Query-Parameter hat einen ungültigen Wert.
     post:
@@ -162,6 +156,20 @@ components:
       schema:
         type: string
         format: uuid
+  responses:
+    CustomerListResponse:
+      description: Die (ggf. gefilterte) Liste der Kunden. Sie ist leer, wenn kein Kunde passt.
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - items
+            properties:
+              items:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Customer"
   schemas:
     Customer:
       type: object
