@@ -185,13 +185,19 @@ components:
     CustomerListResponse:
       type: object
       required:
-        - items
+        - _embedded
         - _links
       properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/Customer"
+        _embedded:
+          description: Die Kunden der aktuellen Seite als eingebettete HAL-Ressourcen.
+          type: object
+          required:
+            - customers
+          properties:
+            customers:
+              type: array
+              items:
+                $ref: "#/components/schemas/Customer"
         _links:
           description:
             Links im HAL-Format zur aktuellen und zu anderen Seiten der Liste. Sie
