@@ -46,7 +46,7 @@ paths:
           in: query
           description:
             Wählt die Seite der Liste aus. Der Wert ist für den Client undurchsichtig;
-            Clients setzen ihn nicht selbst, sondern folgen den `links` der Response.
+            Clients setzen ihn nicht selbst, sondern folgen den `_links` der Response.
             Ohne Cursor beginnt die Liste bei der ersten Seite.
           required: false
           schema:
@@ -57,7 +57,7 @@ paths:
         "200":
           description: Eine Seite der (ggf. gefilterten) Liste der Kunden. Sie ist leer, wenn kein Kunde passt.
           content:
-            application/json:
+            application/hal+json:
               schema:
                 $ref: "#/components/schemas/CustomerListResponse"
         "400":
@@ -87,7 +87,7 @@ paths:
                 type: string
                 format: uri-reference
           content:
-            application/json:
+            application/hal+json:
               schema:
                 $ref: "#/components/schemas/Customer"
         "400":
@@ -105,7 +105,7 @@ paths:
         "200":
           description: Der Kunde wurde gefunden.
           content:
-            application/json:
+            application/hal+json:
               schema:
                 $ref: "#/components/schemas/Customer"
         "400":
@@ -186,44 +186,57 @@ components:
       type: object
       required:
         - items
-        - links
+        - _links
       properties:
         items:
           type: array
           items:
             $ref: "#/components/schemas/Customer"
-        links:
+        _links:
           description:
-            Links zu anderen Seiten der Liste. Sie enthalten alle nötigen
-            Query-Parameter, also auch Filter und `limit` des aktuellen Requests.
+            Links im HAL-Format zur aktuellen und zu anderen Seiten der Liste. Sie
+            enthalten alle nötigen Query-Parameter, also auch Filter und `limit`
+            des aktuellen Requests.
           type: object
           required:
+            - self
             - first
           properties:
+            self:
+              description: Der Link zur aktuellen Seite.
+              $ref: "#/components/schemas/Link"
             first:
               description: Der Link zur ersten Seite.
-              type: string
-              format: uri-reference
+              $ref: "#/components/schemas/Link"
             prev:
               description: Der Link zur vorigen Seite. Fehlt auf der ersten Seite.
-              type: string
-              format: uri-reference
+              $ref: "#/components/schemas/Link"
             next:
               description: Der Link zur nächsten Seite. Fehlt auf der letzten Seite.
-              type: string
-              format: uri-reference
+              $ref: "#/components/schemas/Link"
             last:
               description:
                 Der Link zur letzten Seite. Kann fehlen, wenn der Server das Ende
                 der Liste nicht ohne Weiteres ermitteln kann.
-              type: string
-              format: uri-reference
+              $ref: "#/components/schemas/Link"
     Customer:
       type: object
       required:
         - id
         - name
+        - _links
       properties:
+        _links:
+          description:
+            Links im HAL-Format. Der Server setzt sie, im Request werden sie ignoriert.
+          type: object
+          readOnly: true
+          required:
+            - self
+          properties:
+            self:
+              description: Der Link zum Kunden, z. B. `/kunden/{id}`.
+              $ref: "#/components/schemas/Link"
         id:
           type: string
           format: uuid
@@ -238,6 +251,15 @@ components:
           description: Gibt an, ob der Kunde aktiv ist. Deaktivierte Kunden bleiben gespeichert.
           type: boolean
           default: true
+    Link:
+      description: Ein Link im HAL-Format.
+      type: object
+      required:
+        - href
+      properties:
+        href:
+          type: string
+          format: uri-reference
     CustomerPatch:
       description:
         Die zu ändernden Felder eines Kunden. Alle Felder sind optional, `null`
