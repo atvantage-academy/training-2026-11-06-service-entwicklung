@@ -39,7 +39,7 @@ paths:
           required: false
           schema:
             type: integer
-            minimum: 1
+            minimum: 10
             maximum: 1000
             default: 100
         - name: cursor
@@ -52,6 +52,7 @@ paths:
           schema:
             type: string
             minLength: 1
+            maxLength: 256
       responses:
         "200":
           description: Eine Seite der (ggf. gefilterten) Liste der Kunden. Sie ist leer, wenn kein Kunde passt.
@@ -195,6 +196,7 @@ components:
             Der Cursor für die nächste Seite, der als Query-Parameter `cursor`
             mitzuschicken ist. Fehlt, wenn es keine weitere Seite gibt.
           type: string
+          maxLength: 256
     Customer:
       type: object
       required:
