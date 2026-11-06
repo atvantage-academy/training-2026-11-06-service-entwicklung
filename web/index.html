@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kundenverwaltung API – ATVANTAGE Academy</title>
+  <meta name="description" content="OpenAPI-Beschreibung der Kundenverwaltung aus dem Training „Service-Entwicklung“ der ATVANTAGE Academy.">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="swagger-ui.css">
+  <link rel="stylesheet" href="topbar.css">
+  <link rel="stylesheet" href="swagger-theme.css">
+</head>
+<body>
+
+  <!-- Die Leiste ist handgeschrieben und nicht die von Swagger UI: Die
+       mitgelieferte (StandaloneLayout) bräuchte das Standalone-Preset und
+       brächte ein SmartBear-Logo samt Eingabefeld für beliebige fremde
+       Beschreibungen mit. Also: BaseLayout unten, eigene Leiste hier. -->
+  <header class="stand-bar">
+    <a class="stand-bar__brand" href="https://atvantage.com" rel="noopener">
+      <img class="stand-bar__logo" src="logo-atvantage.svg" alt="ATVANTAGE" width="148" height="19">
+      <span class="stand-bar__academy">Academy</span>
+    </a>
+
+    <div class="stand-bar__title">
+      <span class="stand-bar__api">Kundenverwaltung API</span>
+      <span class="stand-bar__kicker">Training Service-Entwicklung</span>
+    </div>
+  </header>
+
+  <p class="stand-note">
+    <span class="stand-note__text">Verwaltet Kunden-Accounts.</span>
+    <a href="openapi.yaml">openapi.yaml</a>
+  </p>
+
+  <div id="swagger-ui"></div>
+
+  <script src="swagger-ui-bundle.js" crossorigin></script>
+  <script src="topbar.js"></script>
+</body>
+</html>
