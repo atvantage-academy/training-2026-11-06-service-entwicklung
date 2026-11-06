@@ -1,0 +1,21 @@
+name: OpenAPI-Validierung
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    name: openapi.yaml validieren
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # Ruleset "minimal": prüft die Gültigkeit gegen die OpenAPI-Spezifikation,
+      # Stilregeln (z. B. fehlende servers/security) melden nur Warnungen.
+      - name: OpenAPI lint
+        run: npx --yes @redocly/cli@2.64.1 lint openapi.yaml --extends=minimal --format=github-actions
