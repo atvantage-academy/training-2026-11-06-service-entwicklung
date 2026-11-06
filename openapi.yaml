@@ -45,8 +45,8 @@ paths:
         - name: cursor
           in: query
           description:
-            Setzt die Liste nach der zuletzt gelieferten Seite fort. Der Wert ist
-            der `cursor` aus der vorigen Response und für den Client undurchsichtig.
+            Wählt die Seite der Liste aus. Der Wert ist für den Client undurchsichtig;
+            Clients setzen ihn nicht selbst, sondern folgen den `links` der Response.
             Ohne Cursor beginnt die Liste bei der ersten Seite.
           required: false
           schema:
@@ -186,17 +186,38 @@ components:
       type: object
       required:
         - items
+        - links
       properties:
         items:
           type: array
           items:
             $ref: "#/components/schemas/Customer"
-        cursor:
+        links:
           description:
-            Der Cursor für die nächste Seite, der als Query-Parameter `cursor`
-            mitzuschicken ist. Fehlt, wenn es keine weitere Seite gibt.
-          type: string
-          maxLength: 256
+            Links zu anderen Seiten der Liste. Sie enthalten alle nötigen
+            Query-Parameter, also auch Filter und `limit` des aktuellen Requests.
+          type: object
+          required:
+            - first
+          properties:
+            first:
+              description: Der Link zur ersten Seite.
+              type: string
+              format: uri-reference
+            prev:
+              description: Der Link zur vorigen Seite. Fehlt auf der ersten Seite.
+              type: string
+              format: uri-reference
+            next:
+              description: Der Link zur nächsten Seite. Fehlt auf der letzten Seite.
+              type: string
+              format: uri-reference
+            last:
+              description:
+                Der Link zur letzten Seite. Kann fehlen, wenn der Server das Ende
+                der Liste nicht ohne Weiteres ermitteln kann.
+              type: string
+              format: uri-reference
     Customer:
       type: object
       required:
