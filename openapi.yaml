@@ -32,15 +32,34 @@ paths:
           required: false
           schema:
             type: boolean
+        - name: limit
+          in: query
+          description:
+            Die maximale Anzahl an Kunden, die eine Seite enthält.
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 100
+        - name: cursor
+          in: query
+          description:
+            Setzt die Liste nach der zuletzt gelieferten Seite fort. Der Wert ist
+            der `cursor` aus der vorigen Response und für den Client undurchsichtig.
+            Ohne Cursor beginnt die Liste bei der ersten Seite.
+          required: false
+          schema:
+            type: string
+            minLength: 1
       responses:
         "200":
-          description: Die (ggf. gefilterte) Liste der Kunden. Sie ist leer, wenn kein Kunde passt.
+          description: Eine Seite der (ggf. gefilterten) Liste der Kunden. Sie ist leer, wenn kein Kunde passt.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/CustomerListResponse"
         "400":
-          description: Ein Query-Parameter hat einen ungültigen Wert.
+          description: Ein Query-Parameter hat einen ungültigen Wert, z. B. ein unbekannter Cursor.
     post:
       summary:
         Erstellt einen neuen Kunden.
@@ -170,6 +189,11 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Customer"
+        cursor:
+          description:
+            Der Cursor für die nächste Seite, der als Query-Parameter `cursor`
+            mitzuschicken ist. Fehlt, wenn es keine weitere Seite gibt.
+          type: string
     Customer:
       type: object
       required:
