@@ -76,11 +76,14 @@ jobs:
               }' prs.json >> entries.ndjson
           done
 
-          jq -s --arg repo "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" '{specs: ([{
+          # Pages liefert mit `max-age=600` aus. Die Fassungen der PRs ändern sich
+          # nicht mehr, main aber mit jedem Deploy – der Commit in der URL sorgt
+          # dafür, dass der Browser keine veraltete Fassung aus dem Cache zeigt.
+          jq -s --arg repo "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" --arg sha "$GITHUB_SHA" '{specs: ([{
               id: "main",
               label: "Aktueller Stand (main)",
               summary: "Der aktuelle Stand auf main.",
-              url: "specs/main.yaml",
+              url: "specs/main.yaml?v=\($sha)",
               link: ($repo + "/blob/main/openapi.yaml"),
               linkText: "main"
             }] + .)}' entries.ndjson > site/specs.json
