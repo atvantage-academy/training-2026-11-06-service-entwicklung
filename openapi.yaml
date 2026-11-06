@@ -38,9 +38,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Customer"
+                $ref: "#/components/schemas/CustomerListResponse"
         "400":
           description: Ein Query-Parameter hat einen ungültigen Wert.
     post:
@@ -163,6 +161,15 @@ components:
         type: string
         format: uuid
   schemas:
+    CustomerListResponse:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Customer"
     Customer:
       type: object
       required:
