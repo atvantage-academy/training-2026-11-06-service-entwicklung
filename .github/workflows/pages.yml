@@ -1,0 +1,73 @@
+# =============================================================================
+# Swagger UI -> GitHub Pages
+# -----------------------------------------------------------------------------
+# Veröffentlicht die `openapi.yaml` aus `main` zusammen mit einer Swagger UI im
+# ATVANTAGE-Stil. Die Swagger UI liegt nicht im Repository, sondern wird zur
+# Build-Zeit in der gepinnten Version (SWAGGER_UI_VERSION) geladen. Die
+# Oberfläche (Leiste, Theme, Logo) liegt in `pages/` neben diesem Workflow.
+#
+# Voraussetzung (einmalig): Settings -> Pages -> Source: "GitHub Actions".
+# =============================================================================
+name: Swagger UI
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Läuft ein Deploy, wartet der nächste – ein laufender wird nicht abgebrochen.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  SWAGGER_UI_VERSION: 5.32.15
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Swagger UI holen und Site zusammenstellen
+        run: |
+          set -euo pipefail
+          mkdir -p site
+          npm pack --silent --pack-destination /tmp "swagger-ui-dist@${SWAGGER_UI_VERSION}" > /tmp/tgz.txt
+          tar -xzf "/tmp/$(cat /tmp/tgz.txt)" -C /tmp
+          # Standalone-Preset und Favicons von swagger-ui-dist werden nicht
+          # gebraucht: Leiste und Favicon kommen aus pages/.
+          cp /tmp/package/swagger-ui.css \
+             /tmp/package/swagger-ui-bundle.js \
+             /tmp/package/oauth2-redirect.html \
+             site/
+          cp .github/workflows/pages/* site/
+          cp openapi.yaml site/
+
+      - name: Ergebnis prüfen
+        run: |
+          set -euo pipefail
+          for f in index.html topbar.js swagger-theme.css swagger-ui.css swagger-ui-bundle.js openapi.yaml; do
+            test -s "site/$f" || { echo "FEHLER: site/$f fehlt oder ist leer"; exit 1; }
+          done
+          echo "Site: $(find site -type f | wc -l) Dateien"
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

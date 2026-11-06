@@ -1,0 +1,127 @@
+/* =============================================================================
+   Leiste ueber der Swagger UI - ATVANTAGE Academy
+   -----------------------------------------------------------------------------
+   Farben und Schrift stammen aus dem ATVANTAGE-Design-System (Outfit, Orange,
+   Ink). Sie stehen hier als feste Werte, WEIL dieses Repository das Theme
+   nicht einbindet: Es ist eine einzelne statische Seite ohne Build und ohne
+   npm-Abhaengigkeit. Aendert sich die Marke, ist dieser Block die einzige
+   Stelle, die nachzuziehen ist.
+   ============================================================================= */
+
+:root {
+  --avd-slate:       #303E4F;   /* dunkle Flaechen, Marke */
+  --avd-ink:         #1A2627;   /* Ueberschriften */
+  --avd-anthracite:  #343E3F;   /* Fliesstext */
+  --avd-orange:      #FF5401;   /* Akzent */
+  --avd-gray-footer: #5F5F5F;   /* sekundaerer Text */
+  --avd-metanav:     #F4F4F4;   /* Meta-Flaeche */
+  --avd-border:      #E6E8EA;   /* Haarlinien */
+  --avd-font: 'Outfit', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  /* Dieselbe Reihenfolge wie im Academy-Theme (tokens.css), damit Code hier
+     und in den Kursunterlagen gleich aussieht. */
+  --avd-mono: 'Consolas', 'SF Mono', ui-monospace, monospace;
+  --avd-code-bg: #EDEDED;       /* --avd-gray-card, die Code-Flaeche des Themes */
+}
+
+html { color-scheme: light; }
+
+body {
+  margin: 0;
+  background: #fafafa;
+}
+
+/* --- Die Leiste ---------------------------------------------------------- */
+
+.stand-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 28px;
+  padding: 14px clamp(16px, 4vw, 40px);
+  background: #fff;
+  border-bottom: 3px solid var(--avd-orange);
+  font-family: var(--avd-font);
+  box-shadow: 0 1px 3px rgba(26, 38, 39, .06);
+}
+
+.stand-bar__brand {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  text-decoration: none;
+  flex: 0 0 auto;
+}
+
+.stand-bar__logo {
+  display: block;
+  width: 148px;
+  height: auto;
+}
+
+.stand-bar__academy {
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: .02em;
+  /* Schwarz neben der orangen Wortmarke - so steht die Marke fuer sich und
+     "Academy" liest sich als Zusatz, nicht als Teil des Logos. */
+  color: var(--avd-ink);
+}
+
+/* --- Titel --------------------------------------------------------------- */
+
+.stand-bar__title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 260px;
+  min-width: 0;
+  padding-left: 28px;
+  border-left: 1px solid var(--avd-border);
+}
+
+.stand-bar__api {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--avd-ink);
+  line-height: 1.2;
+}
+
+.stand-bar__kicker {
+  font-size: 13px;
+  color: var(--avd-gray-footer);
+  line-height: 1.3;
+}
+
+/* --- Die Zeile darunter: was dieser Stand zeigt --------------------------- */
+
+.stand-note {
+  margin: 0;
+  padding: 10px clamp(16px, 4vw, 40px);
+  background: var(--avd-metanav);
+  border-bottom: 1px solid var(--avd-border);
+  font-family: var(--avd-font);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--avd-anthracite);
+}
+
+.stand-note__text { margin-right: .5em; }
+
+.stand-note a {
+  color: var(--avd-orange);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  white-space: nowrap;
+}
+
+.stand-note a:hover { text-decoration-thickness: 2px; }
+
+/* Was die Swagger UI selbst betrifft, steht in swagger-theme.css. */
+
+@media (max-width: 720px) {
+  .stand-bar__title {
+    padding-left: 0;
+    border-left: none;
+    flex-basis: 100%;
+  }
+}
