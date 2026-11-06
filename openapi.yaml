@@ -1,0 +1,201 @@
+openapi: 3.1.0
+info:
+  title: Kundenverwaltung
+  description: Verwaltet Kunden-Accounts.
+  version: 0.1.0
+paths:
+  /kunden:
+    get:
+      summary:
+        Gibt eine Liste aller Kunden zurück.
+      description:
+        Diese Operation gibt eine Liste aller Kunden zurück, die im System registriert sind.
+        Über Query-Parameter lässt sich die Liste filtern; mehrere Filter werden UND-verknüpft.
+        Ohne Filter werden alle Kunden geliefert.
+      operationId: getKunden
+      parameters:
+        - name: name
+          in: query
+          description:
+            Filtert nach dem Namen des Kunden. Es genügt ein Teil des Namens,
+            Groß- und Kleinschreibung werden ignoriert.
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 100
+        - name: active
+          in: query
+          description:
+            Filtert nach dem Status des Kunden – `true` liefert nur aktive,
+            `false` nur deaktivierte Kunden.
+          required: false
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: Die (ggf. gefilterte) Liste der Kunden. Sie ist leer, wenn kein Kunde passt.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Customer"
+        "400":
+          description: Ein Query-Parameter hat einen ungültigen Wert.
+    post:
+      summary:
+        Erstellt einen neuen Kunden.
+      description:
+        Legt einen neuen Kunden an. Die ID vergibt der Server, eine im Request
+        mitgeschickte ID wird ignoriert. Ist `active` nicht angegeben, wird der Kunde
+        als aktiv angelegt.
+      operationId: createKunde
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Customer"
+      responses:
+        "201":
+          description: Der Kunde wurde erfolgreich erstellt.
+          headers:
+            Location:
+              description: Die URL des neu angelegten Kunden, z. B. `/kunden/{id}`.
+              required: true
+              schema:
+                type: string
+                format: uri-reference
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Customer"
+        "400":
+          description: Der Request-Body ist ungültig, z. B. weil der Name fehlt oder zu lang ist.
+  /kunden/{id}:
+    parameters:
+      - $ref: "#/components/parameters/CustomerIdParameter"
+    get:
+      summary:
+        Gibt einen einzelnen Kunden zurück.
+      description:
+        Liest den Kunden mit der angegebenen ID aus.
+      operationId: getKunde
+      responses:
+        "200":
+          description: Der Kunde wurde gefunden.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Customer"
+        "400":
+          description: Die ID ist keine gültige UUID.
+        "404":
+          description: Es gibt keinen Kunden mit der angegebenen ID.
+    put:
+      summary:
+        Ersetzt die Daten eines Kunden.
+      description:
+        Ersetzt alle Daten des Kunden mit der angegebenen ID. Nicht mitgeschickte
+        optionale Felder werden entfernt. Die ID im Body wird ignoriert, maßgeblich
+        ist die ID im Pfad. Über `active` lässt sich ein Kunde auch deaktivieren
+        bzw. wieder aktivieren.
+      operationId: replaceKunde
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Customer"
+      responses:
+        "204":
+          description: Der Kunde wurde erfolgreich geändert.
+        "400":
+          description: Die ID ist keine gültige UUID oder der Request-Body ist ungültig.
+        "404":
+          description: Es gibt keinen Kunden mit der angegebenen ID.
+    patch:
+      summary:
+        Ändert einzelne Daten eines Kunden.
+      description: >-
+        Ändert nur die mitgeschickten Felder des Kunden mit der angegebenen ID
+        (JSON Merge Patch nach RFC 7396). Ein Feld mit dem Wert `null` wird entfernt.
+        Typischer Anwendungsfall ist das Deaktivieren eines Kunden mit
+        `{ "active": false }`.
+      operationId: updateKunde
+      requestBody:
+        required: true
+        content:
+          application/merge-patch+json:
+            schema:
+              $ref: "#/components/schemas/CustomerPatch"
+      responses:
+        "204":
+          description: Der Kunde wurde erfolgreich geändert.
+        "400":
+          description: Die ID ist keine gültige UUID oder der Request-Body ist ungültig.
+        "404":
+          description: Es gibt keinen Kunden mit der angegebenen ID.
+    delete:
+      summary:
+        Löscht einen Kunden.
+      description:
+        Löscht den Kunden mit der angegebenen ID endgültig. Soll der Kunde nur
+        gesperrt werden, ist er stattdessen per PATCH oder PUT zu deaktivieren.
+      operationId: deleteKunde
+      responses:
+        "204":
+          description: Der Kunde wurde erfolgreich gelöscht.
+        "400":
+          description: Die ID ist keine gültige UUID.
+        "404":
+          description: Es gibt keinen Kunden mit der angegebenen ID.
+#  /kunden/{id}/creditcard:
+components:
+  parameters:
+    CustomerIdParameter :
+      name: id
+      in: path
+      description: Die ID des Kunden
+      required: true
+      schema:
+        type: string
+        format: uuid
+  schemas:
+    Customer:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+        birthdate:
+          type: string
+          format: date
+        active:
+          description: Gibt an, ob der Kunde aktiv ist. Deaktivierte Kunden bleiben gespeichert.
+          type: boolean
+          default: true
+    CustomerPatch:
+      description:
+        Die zu ändernden Felder eines Kunden. Alle Felder sind optional, `null`
+        entfernt ein optionales Feld.
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        birthdate:
+          type:
+            - string
+            - "null"
+          format: date
+        active:
+          type: boolean
