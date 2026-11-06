@@ -199,7 +199,6 @@ components:
           type: object
           required:
             - first
-            - last
           properties:
             first:
               description: Der Link zur ersten Seite.
@@ -214,7 +213,9 @@ components:
               type: string
               format: uri-reference
             last:
-              description: Der Link zur letzten Seite.
+              description:
+                Der Link zur letzten Seite. Kann fehlen, wenn der Server das Ende
+                der Liste nicht ohne Weiteres ermitteln kann.
               type: string
               format: uri-reference
     Customer:
