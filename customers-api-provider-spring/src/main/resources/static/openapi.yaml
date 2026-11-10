@@ -1,0 +1,351 @@
+openapi: 3.1.0
+info:
+  title: Kundenverwaltung
+  description: Verwaltet Kunden-Accounts.
+  version: 0.1.0
+paths:
+  /kunden:
+    get:
+      summary:
+        Gibt eine Liste aller Kunden zurück.
+      description:
+        Diese Operation gibt eine Liste aller Kunden zurück, die im System registriert sind.
+        Über Query-Parameter lässt sich die Liste filtern; mehrere Filter werden UND-verknüpft.
+        Ohne Filter werden alle Kunden geliefert.
+      operationId: getKunden
+      parameters:
+        - name: name
+          in: query
+          description:
+            Filtert nach dem Namen des Kunden. Es genügt ein Teil des Namens,
+            Groß- und Kleinschreibung werden ignoriert.
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 100
+        - name: active
+          in: query
+          description:
+            Filtert nach dem Status des Kunden – `true` liefert nur aktive,
+            `false` nur deaktivierte Kunden.
+          required: false
+          schema:
+            type: boolean
+        - name: limit
+          in: query
+          description:
+            Die maximale Anzahl an Kunden, die eine Seite enthält.
+          required: false
+          schema:
+            type: integer
+            minimum: 10
+            maximum: 1000
+            default: 100
+        - name: cursor
+          in: query
+          description:
+            Wählt die Seite der Liste aus. Der Wert ist für den Client undurchsichtig;
+            Clients setzen ihn nicht selbst, sondern folgen den `_links` der Response.
+            Ohne Cursor beginnt die Liste bei der ersten Seite.
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 256
+      responses:
+        "200":
+          description: Eine Seite der (ggf. gefilterten) Liste der Kunden. Sie ist leer, wenn kein Kunde passt.
+          content:
+            application/hal+json:
+              schema:
+                $ref: "#/components/schemas/CustomerListResponse"
+        "400":
+          description: Ein Query-Parameter hat einen ungültigen Wert, z. B. ein unbekannter Cursor.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+    post:
+      summary:
+        Erstellt einen neuen Kunden.
+      description:
+        Legt einen neuen Kunden an. Die ID vergibt der Server, eine im Request
+        mitgeschickte ID wird ignoriert. Ist `active` nicht angegeben, wird der Kunde
+        als aktiv angelegt.
+      operationId: createKunde
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Customer"
+      responses:
+        "201":
+          description: Der Kunde wurde erfolgreich erstellt.
+          headers:
+            Location:
+              description: Die URL des neu angelegten Kunden, z. B. `/kunden/{id}`.
+              required: true
+              schema:
+                type: string
+                format: uri-reference
+          content:
+            application/hal+json:
+              schema:
+                $ref: "#/components/schemas/Customer"
+        "400":
+          description: Der Request-Body ist ungültig, z. B. weil der Name fehlt oder zu lang ist.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+  /kunden/{id}:
+    parameters:
+      - $ref: "#/components/parameters/CustomerIdParameter"
+    get:
+      summary:
+        Gibt einen einzelnen Kunden zurück.
+      description:
+        Liest den Kunden mit der angegebenen ID aus.
+      operationId: getKunde
+      responses:
+        "200":
+          description: Der Kunde wurde gefunden.
+          content:
+            application/hal+json:
+              schema:
+                $ref: "#/components/schemas/Customer"
+        "400":
+          description: Die ID ist keine gültige UUID.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+        "404":
+          description: Es gibt keinen Kunden mit der angegebenen ID.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+    put:
+      summary:
+        Ersetzt die Daten eines Kunden.
+      description:
+        Ersetzt alle Daten des Kunden mit der angegebenen ID. Nicht mitgeschickte
+        optionale Felder werden entfernt. Die ID im Body wird ignoriert, maßgeblich
+        ist die ID im Pfad. Über `active` lässt sich ein Kunde auch deaktivieren
+        bzw. wieder aktivieren.
+      operationId: replaceKunde
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Customer"
+      responses:
+        "204":
+          description: Der Kunde wurde erfolgreich geändert.
+        "400":
+          description: Die ID ist keine gültige UUID oder der Request-Body ist ungültig.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+        "404":
+          description: Es gibt keinen Kunden mit der angegebenen ID.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+    patch:
+      summary:
+        Ändert einzelne Daten eines Kunden.
+      description: >-
+        Ändert nur die mitgeschickten Felder des Kunden mit der angegebenen ID
+        (JSON Merge Patch nach RFC 7396). Ein Feld mit dem Wert `null` wird entfernt.
+        Typischer Anwendungsfall ist das Deaktivieren eines Kunden mit
+        `{ "active": false }`.
+      operationId: updateKunde
+      requestBody:
+        required: true
+        content:
+          application/merge-patch+json:
+            schema:
+              $ref: "#/components/schemas/CustomerPatch"
+      responses:
+        "204":
+          description: Der Kunde wurde erfolgreich geändert.
+        "400":
+          description: Die ID ist keine gültige UUID oder der Request-Body ist ungültig.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+        "404":
+          description: Es gibt keinen Kunden mit der angegebenen ID.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+    delete:
+      summary:
+        Löscht einen Kunden.
+      description:
+        Löscht den Kunden mit der angegebenen ID endgültig. Soll der Kunde nur
+        gesperrt werden, ist er stattdessen per PATCH oder PUT zu deaktivieren.
+      operationId: deleteKunde
+      responses:
+        "204":
+          description: Der Kunde wurde erfolgreich gelöscht.
+        "400":
+          description: Die ID ist keine gültige UUID.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+        "404":
+          description: Es gibt keinen Kunden mit der angegebenen ID.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+#  /kunden/{id}/creditcard:
+components:
+  parameters:
+    CustomerIdParameter :
+      name: id
+      in: path
+      description: Die ID des Kunden
+      required: true
+      schema:
+        type: string
+        format: uuid
+  schemas:
+    CustomerListResponse:
+      type: object
+      required:
+        - _embedded
+        - _links
+      properties:
+        _embedded:
+          description: Die Kunden der aktuellen Seite als eingebettete HAL-Ressourcen.
+          type: object
+          required:
+            - items
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/Customer"
+        _links:
+          description:
+            Links im HAL-Format zur aktuellen und zu anderen Seiten der Liste. Sie
+            enthalten alle nötigen Query-Parameter, also auch Filter und `limit`
+            des aktuellen Requests.
+          type: object
+          required:
+            - self
+            - first
+          properties:
+            self:
+              description: Der Link zur aktuellen Seite.
+              $ref: "#/components/schemas/Link"
+            first:
+              description: Der Link zur ersten Seite.
+              $ref: "#/components/schemas/Link"
+            prev:
+              description: Der Link zur vorigen Seite. Fehlt auf der ersten Seite.
+              $ref: "#/components/schemas/Link"
+            next:
+              description: Der Link zur nächsten Seite. Fehlt auf der letzten Seite.
+              $ref: "#/components/schemas/Link"
+            last:
+              description:
+                Der Link zur letzten Seite. Kann fehlen, wenn der Server das Ende
+                der Liste nicht ohne Weiteres ermitteln kann.
+              $ref: "#/components/schemas/Link"
+    Customer:
+      type: object
+      required:
+        - id
+        - name
+        - _links
+      properties:
+        _links:
+          description:
+            Links im HAL-Format. Der Server setzt sie, im Request werden sie ignoriert.
+          type: object
+          readOnly: true
+          required:
+            - self
+          properties:
+            self:
+              description: Der Link zum Kunden, z. B. `/kunden/{id}`.
+              $ref: "#/components/schemas/Link"
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+        birthdate:
+          type: string
+          format: date
+        active:
+          description: Gibt an, ob der Kunde aktiv ist. Deaktivierte Kunden bleiben gespeichert.
+          type: boolean
+          default: true
+    Link:
+      description: Ein Link im HAL-Format.
+      type: object
+      required:
+        - href
+      properties:
+        href:
+          type: string
+          format: uri-reference
+    ProblemDetails:
+      description:
+        Beschreibt einen Fehler im Format „Problem Details for HTTP APIs“ nach RFC 9457.
+      type: object
+      properties:
+        type:
+          description:
+            Eine URI, die die Art des Problems kennzeichnet. Fehlt sie, gilt
+            `about:blank`, d. h. das Problem ist nur durch den Statuscode beschrieben.
+          type: string
+          format: uri-reference
+          default: about:blank
+        title:
+          description: Eine kurze, für Menschen lesbare Zusammenfassung der Art des Problems.
+          type: string
+        status:
+          description: Der HTTP-Statuscode der Response.
+          type: integer
+          minimum: 100
+          maximum: 599
+        detail:
+          description: Eine für Menschen lesbare Erklärung dieses konkreten Auftretens des Problems.
+          type: string
+        instance:
+          description: Eine URI, die dieses konkrete Auftreten des Problems kennzeichnet.
+          type: string
+          format: uri-reference
+    CustomerPatch:
+      description:
+        Die zu ändernden Felder eines Kunden. Alle Felder sind optional, `null`
+        entfernt ein optionales Feld.
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        birthdate:
+          type:
+            - string
+            - "null"
+          format: date
+        active:
+          type: boolean
