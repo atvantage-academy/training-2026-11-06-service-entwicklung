@@ -19,4 +19,13 @@ class StaticResourcesTests {
         .contentType("text/html");
   }
 
+  @Test
+  void when_get_openapi_then_return_openapi_yaml() {
+    given()
+      .when()
+      .get("/openapi.yaml")
+      .then()
+      .statusCode(200);
+  }
+
 }
