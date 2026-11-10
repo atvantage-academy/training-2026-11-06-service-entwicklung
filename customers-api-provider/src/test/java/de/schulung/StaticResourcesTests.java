@@ -1,0 +1,31 @@
+package de.schulung;
+
+import io.quarkus.test.junit.QuarkusTest;
+import org.junit.jupiter.api.Test;
+
+import static io.restassured.RestAssured.given;
+
+
+@QuarkusTest
+class StaticResourcesTests {
+
+  @Test
+  void when_get_index_then_return_index_html() {
+    given()
+      .when()
+        .get("/index.html")
+      .then()
+        .statusCode(200)
+        .contentType("text/html");
+  }
+
+  @Test
+  void when_get_openapi_then_return_openapi_yaml() {
+    given()
+      .when()
+      .get("/openapi.yaml")
+      .then()
+      .statusCode(200);
+  }
+
+}

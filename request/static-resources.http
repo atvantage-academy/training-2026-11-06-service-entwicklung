@@ -1,0 +1,17 @@
+### Anwendung hat eine Startseite
+GET {{basepath}}/index.html
+
+> {%
+  client.test("Statuscode ist 200", function() {
+    client.assert(response.status === 200, "Erwartet wurde Statuscode 200");
+  });
+%}
+
+### OpenAPI ist online verfügbar
+GET {{basepath}}/openapi.yaml
+
+> {%
+  client.test("Statuscode ist 200", function() {
+    client.assert(response.status === 200, "Erwartet wurde Statuscode 200");
+  });
+%}
