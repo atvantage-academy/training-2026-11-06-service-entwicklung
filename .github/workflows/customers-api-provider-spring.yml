@@ -1,0 +1,29 @@
+name: customers-api-provider-spring
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - customers-api-provider-spring/**
+  pull_request:
+    branches: [main]
+    paths:
+      - customers-api-provider-spring/**
+
+jobs:
+  verify:
+    name: Maven verify (Spring Boot)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: customers-api-provider-spring
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+          cache-dependency-path: customers-api-provider-spring/pom.xml
+      - name: Maven verify
+        run: mvn --batch-mode --no-transfer-progress verify

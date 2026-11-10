@@ -3,8 +3,12 @@ name: OpenAPI-Validierung
 on:
   push:
     branches: [main]
+    paths:
+      - openapi.yaml
   pull_request:
     branches: [main]
+    paths:
+      - openapi.yaml
 
 jobs:
   validate:

@@ -14,6 +14,8 @@ name: Swagger UI
 on:
   push:
     branches: [main]
+    paths:
+      - openapi.yaml
   workflow_dispatch:
 
 permissions:
