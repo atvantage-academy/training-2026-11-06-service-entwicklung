@@ -25,4 +25,10 @@ class StaticResourcesTests {
 			.andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_HTML));
 	}
 
+  @Test
+  void when_get_openapi_then_return_openapi_yaml() throws Exception {
+    mvc.perform(get("/openapi.yaml"))
+      .andExpect(status().isOk());
+  }
+
 }
