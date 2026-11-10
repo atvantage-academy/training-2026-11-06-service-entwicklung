@@ -1,5 +1,5 @@
 ### Anwendung hat eine Startseite
-GET http://localhost:8080/index.html
+GET {{basepath}}/index.html
 
 > {%
   client.test("Statuscode ist 200", function() {
@@ -8,7 +8,7 @@ GET http://localhost:8080/index.html
 %}
 
 ### OpenAPI ist online verfügbar
-GET http://localhost:8080/openapi.yaml
+GET {{basepath}}/openapi.yaml
 
 > {%
   client.test("Statuscode ist 200", function() {
