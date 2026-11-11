@@ -32,6 +32,11 @@ public class CustomersResource {
         .status(Response.Status.BAD_REQUEST)
         .build();
     }
+    if (kunde.getId() != null) {
+      return Response
+        .status(Response.Status.BAD_REQUEST)
+        .build();
+    }
     if(kunde.getName() == null || kunde.getName().isBlank()) {
       return Response
         .status(Response.Status.BAD_REQUEST)
