@@ -9,19 +9,21 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import java.net.URI;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Path("/kunden")
 public class CustomersResource {
 
+  // TODO: Provisorium
+  private final Map<UUID, Kunde> kunden = new ConcurrentHashMap<>();
+
   @GET
   @Produces(MediaType.APPLICATION_JSON)
-  public String getKunden() {
-    return """
-      { 
-        "items": ["Hello, World!"]
-      }
-      """;
+  public CustomerListResponse getKunden() {
+    var kundenObjekte = kunden.values();
+    return new CustomerListResponse(kundenObjekte);
   }
 
   @POST
@@ -44,6 +46,7 @@ public class CustomersResource {
         .build();
     }
     kunde.setId(UUID.randomUUID());
+    kunden.put(kunde.getId(), kunde);
     URI location = URI.create("/kunden/" + kunde.getId());
     return Response
       .status(Response.Status.CREATED)

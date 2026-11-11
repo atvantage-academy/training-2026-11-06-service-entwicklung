@@ -247,4 +247,17 @@ public class CustomersApiTests {
       .statusCode(400);
   }
 
+  // TODO: GET /kunden/{id}
+  /*
+   * Positivfall:
+   *   - POST /kunden -> 201, ID auslesen
+   *   - GET /kunden/{id}, id ist ID der vorherigen Anfrage, Accept: application/json
+   *      -> 200, Kunde mit korrekten Attributen im Body
+   *  Negativfälle:
+   *   - GET /kunden/{id} mit Zufalls-UUID, Accept: application/json
+   *      -> 404 (später, komplizierter: Anlegen, Löschen, Abfragen)
+   *   - GET /kunden/{id} mit syntaktisch falscher ID (keine UUID)
+   *      -> 400
+   */
+
 }
