@@ -49,18 +49,13 @@ public class CustomersApiTests {
   }
 
   /*
-   * POST /kunden
-   * - Zusatz:
-   *   - Location-Header?
-   */
-
-  /*
    *   - POST /kunden, Kunde im Body, Content-Type: application/json, Accept: application/json
    *       -> 201, Content-Type: application/json, Kunde im Body inkl. ID
    */
+  // TODO Location-Header: /kunden/{id}
   @Test
   void given_valid_customer_when_post_kunden_then_return_201_and_customer_with_id() {
-    given()
+    var response = given()
       .contentType(ContentType.JSON)
       .body("""
         {
@@ -71,14 +66,23 @@ public class CustomersApiTests {
       """)
       .accept(ContentType.JSON)
       .when()
-      .post("/kunden")
-      .then()
+      .post("/kunden");
+
+    response.then()
       .statusCode(201)
       .contentType(ContentType.JSON)
       .body("name", is(equalTo("Tom Mayer")))
       .body("birthdate", is(equalTo("1990-01-01")))
       .body("status", is(equalTo("active")))
       .body("id", is(not(emptyOrNullString())));
+
+    String id = response
+      .jsonPath()
+      .getString("id");
+
+    response.then()
+      .header("Location", is(equalTo("/kunden/" + id)));
+
   }
 
   /*

@@ -8,6 +8,7 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+import java.net.URI;
 import java.util.UUID;
 
 @Path("/kunden")
@@ -43,8 +44,10 @@ public class CustomersResource {
         .build();
     }
     kunde.setId(UUID.randomUUID());
+    URI location = URI.create("/kunden/" + kunde.getId());
     return Response
       .status(Response.Status.CREATED)
+      .header("Location", location)
       .entity(kunde)
       .build();
   }
