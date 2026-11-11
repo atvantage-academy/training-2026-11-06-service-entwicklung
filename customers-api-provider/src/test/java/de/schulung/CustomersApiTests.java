@@ -52,7 +52,6 @@ public class CustomersApiTests {
    *   - POST /kunden, Kunde im Body, Content-Type: application/json, Accept: application/json
    *       -> 201, Content-Type: application/json, Kunde im Body inkl. ID
    */
-  // TODO Location-Header: /kunden/{id}
   @Test
   void given_valid_customer_when_post_kunden_then_return_201_and_customer_with_id() {
     var response = given()
