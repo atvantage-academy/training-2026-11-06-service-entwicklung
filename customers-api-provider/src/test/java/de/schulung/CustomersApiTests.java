@@ -10,6 +10,7 @@ import java.util.List;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.emptyOrNullString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -65,7 +66,6 @@ public class CustomersApiTests {
    *   - POST /kunden, Kunde im Body, Content-Type: application/json, Accept: application/json
    *       -> 201, Content-Type: application/json, Kunde im Body inkl. ID
    */
-
   @Test
   void given_valid_customer_when_post_kunden_then_return_201_and_customer_with_id() {
     given()
@@ -87,6 +87,169 @@ public class CustomersApiTests {
       .body("birthdate", is(equalTo("1990-01-01")))
       .body("status", is(equalTo("active")))
       .body("id", is(not(emptyOrNullString())));
+  }
+
+  /*
+   *   - POST /kunden, Kunde im Body als XML, Content-Type: application/xml, Accept: application/json
+   *       -> 415
+   */
+  @Test
+  void given_customer_as_xml_when_post_kunden_then_return_415() {
+    given()
+      .contentType(ContentType.XML)
+      .body("""
+        <kunde>
+          <name>Tom Mayer</name>
+          <birthdate>1990-01-01</birthdate>
+          <status>active</status>
+        </kunde>
+      """)
+      .accept(ContentType.JSON)
+      .when()
+      .post("/kunden")
+      .then()
+      .statusCode(415);
+  }
+
+  /*
+   *   - POST /kunden, Kunde im Body, Content-Type: application/json, Accept: application/xml
+   *       -> 406
+   */
+  @Test
+  void given_valid_customer_when_post_kunden_with_invalid_accept_then_return_406() {
+    given()
+      .contentType(ContentType.JSON)
+      .body("""
+        {
+          "name": "Tom Mayer",
+          "birthdate": "1990-01-01",
+          "status": "active"
+        }
+      """)
+      .accept(ContentType.XML)
+      .when()
+      .post("/kunden")
+      .then()
+      .statusCode(406);
+  }
+
+  /*
+   *   - POST /kunden, Kunde im Body nicht vorhanden, Content-Type: application/json, Accept: application/json
+   *       -> 400
+   */
+  @Test
+  void given_no_customer_when_post_kunden_then_return_400() {
+    given()
+      .contentType(ContentType.JSON)
+      .accept(ContentType.JSON)
+      .when()
+      .post("/kunden")
+      .then()
+      .statusCode(400);
+  }
+
+  /*
+   *   - POST /kunden, Kunde im Body leer, Content-Type: application/json, Accept: application/json
+   *       -> 400
+   */
+  @Test
+  void given_empty_customer_when_post_kunden_then_return_400() {
+    given()
+      .contentType(ContentType.JSON)
+      .body("{}")
+      .accept(ContentType.JSON)
+      .when()
+      .post("/kunden")
+      .then()
+      .statusCode(400);
+  }
+
+  /*
+   *   - POST /kunden, Kunde im Body invalide (kein gültiges JSON), Content-Type: application/json, Accept: application/json
+   *       -> 400
+   */
+  @Test
+  void given_malformed_json_when_post_kunden_then_return_400() {
+    given()
+      .contentType(ContentType.JSON)
+      .body("""
+        {
+          "name": "Tom Mayer",
+      """)
+      .accept(ContentType.JSON)
+      .when()
+      .post("/kunden")
+      .then()
+      .statusCode(400);
+  }
+
+  /*
+   *   - POST /kunden, Kunde im Body invalide (ungültiges Geburtsdatum), Content-Type: application/json, Accept: application/json
+   *       -> 400
+   */
+  @Test
+  void given_customer_with_invalid_birthdate_when_post_kunden_then_return_400() {
+    given()
+      .contentType(ContentType.JSON)
+      .body("""
+        {
+          "name": "Tom Mayer",
+          "birthdate": "gestern",
+          "status": "active"
+        }
+      """)
+      .accept(ContentType.JSON)
+      .when()
+      .post("/kunden")
+      .then()
+      .statusCode(400);
+  }
+
+  /*
+   *   - POST /kunden, Kunde im Body mit ID, Content-Type: application/json, Accept: application/json
+   *       -> 201, mitgeschickte ID wird ignoriert, Server vergibt eine neue ID
+   */
+  @Test
+  void given_customer_with_id_when_post_kunden_then_ignore_id() {
+    var sentId = "00000000-0000-0000-0000-000000000001";
+    given()
+      .contentType(ContentType.JSON)
+      .body("""
+        {
+          "id": "%s",
+          "name": "Tom Mayer",
+          "birthdate": "1990-01-01",
+          "status": "active"
+        }
+      """.formatted(sentId))
+      .accept(ContentType.JSON)
+      .when()
+      .post("/kunden")
+      .then()
+      .statusCode(400);
+  }
+
+  /*
+   *   - POST /kunden, Kunde im Body mit unbekannten Attributen, Content-Type: application/json, Accept: application/json
+   *       -> 201, unbekannte Attribute werden ignoriert und nicht zurückgegeben
+   */
+  @Test
+  void given_customer_with_unknown_attributes_when_post_kunden_then_ignore_them() {
+    given()
+      .contentType(ContentType.JSON)
+      .body("""
+        {
+          "name": "Tom Mayer",
+          "birthdate": "1990-01-01",
+          "status": "active",
+          "lieblingsfarbe": "blau"
+        }
+      """)
+      .accept(ContentType.JSON)
+      .when()
+      .post("/kunden")
+      .then()
+      .statusCode(400);
   }
 
 }

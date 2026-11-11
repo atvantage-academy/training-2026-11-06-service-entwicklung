@@ -25,7 +25,18 @@ public class CustomersResource {
 
   @POST
   @Consumes(MediaType.APPLICATION_JSON)
+  @Produces(MediaType.APPLICATION_JSON)
   public Response createKunde(Kunde kunde) {
+    if(kunde == null) {
+      return Response
+        .status(Response.Status.BAD_REQUEST)
+        .build();
+    }
+    if(kunde.getName() == null || kunde.getName().isBlank()) {
+      return Response
+        .status(Response.Status.BAD_REQUEST)
+        .build();
+    }
     kunde.setId(UUID.randomUUID());
     return Response
       .status(Response.Status.CREATED)
