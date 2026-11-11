@@ -24,14 +24,13 @@ paths:
             type: string
             minLength: 1
             maxLength: 100
-        - name: active
+        - name: state
           in: query
           description:
-            Filtert nach dem Status des Kunden – `true` liefert nur aktive,
-            `false` nur deaktivierte Kunden.
+            Filtert nach dem Status des Kunden, z. B. liefert `active` nur aktive Kunden.
           required: false
           schema:
-            type: boolean
+            $ref: "#/components/schemas/CustomerStatus"
       responses:
         "200":
           description: Die (ggf. gefilterte) Liste der Kunden. Sie ist leer, wenn kein Kunde passt.
@@ -46,8 +45,8 @@ paths:
         Erstellt einen neuen Kunden.
       description:
         Legt einen neuen Kunden an. Die ID vergibt der Server, eine im Request
-        mitgeschickte ID wird ignoriert. Ist `active` nicht angegeben, wird der Kunde
-        als aktiv angelegt.
+        mitgeschickte ID wird ignoriert. Ist `status` nicht angegeben, wird der Kunde
+        als aktiv (`active`) angelegt.
       operationId: createKunde
       requestBody:
         required: true
@@ -97,8 +96,8 @@ paths:
       description:
         Ersetzt alle Daten des Kunden mit der angegebenen ID. Nicht mitgeschickte
         optionale Felder werden entfernt. Die ID im Body wird ignoriert, maßgeblich
-        ist die ID im Pfad. Über `active` lässt sich ein Kunde auch deaktivieren
-        bzw. wieder aktivieren.
+        ist die ID im Pfad. Über `status` lässt sich ein Kunde auch sperren,
+        deaktivieren oder wieder aktivieren.
       operationId: replaceKunde
       requestBody:
         required: true
@@ -119,8 +118,8 @@ paths:
       description: >-
         Ändert nur die mitgeschickten Felder des Kunden mit der angegebenen ID
         (JSON Merge Patch nach RFC 7396). Ein Feld mit dem Wert `null` wird entfernt.
-        Typischer Anwendungsfall ist das Deaktivieren eines Kunden mit
-        `{ "active": false }`.
+        Typischer Anwendungsfall ist das Sperren eines Kunden mit
+        `{ "status": "locked" }`.
       operationId: updateKunde
       requestBody:
         required: true
@@ -140,7 +139,7 @@ paths:
         Löscht einen Kunden.
       description:
         Löscht den Kunden mit der angegebenen ID endgültig. Soll der Kunde nur
-        gesperrt werden, ist er stattdessen per PATCH oder PUT zu deaktivieren.
+        gesperrt oder deaktiviert werden, ist stattdessen per PATCH oder PUT sein `status` zu ändern.
       operationId: deleteKunde
       responses:
         "204":
@@ -186,10 +185,18 @@ components:
         birthdate:
           type: string
           format: date
-        active:
-          description: Gibt an, ob der Kunde aktiv ist. Deaktivierte Kunden bleiben gespeichert.
-          type: boolean
-          default: true
+        status:
+          $ref: "#/components/schemas/CustomerStatus"
+          default: active
+    CustomerStatus:
+      description:
+        Der Status eines Kunden – `active` (aktiv), `locked` (gesperrt) oder
+        `disabled` (deaktiviert). Gesperrte und deaktivierte Kunden bleiben gespeichert.
+      type: string
+      enum:
+        - active
+        - locked
+        - disabled
     CustomerPatch:
       description:
         Die zu ändernden Felder eines Kunden. Alle Felder sind optional, `null`
@@ -204,5 +211,5 @@ components:
             - string
             - "null"
           format: date
-        active:
-          type: boolean
+        status:
+          $ref: "#/components/schemas/CustomerStatus"
