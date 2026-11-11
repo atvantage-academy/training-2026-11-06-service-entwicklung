@@ -50,14 +50,6 @@ public class CustomersApiTests {
 
   /*
    * POST /kunden
-   * - Positivfall:
-   *   - POST /kunden, Kunde im Body, Content-Type: application/json, Accept: application/json
-   *       -> 201, Content-Type: application/json, Kunde im Body inkl. ID
-   * - Fehlerfälle:
-   *   - POST /kunden, Kunde im Body als XML, Content-Type: application/xml, Accept: application/json
-   *   - POST /kunden, Kunde im Body leer/invalide/nicht vorhanden, Content-Type: application/json, Accept: application/json
-   *   - POST /kunden, Kunde im Body mit mehr Attributen (insb. mit ID), Content-Type: application/json, Accept: application/json
-   *   - POST /kunden, Kunde im Body, Content-Type: application/json, Accept: application/xml
    * - Zusatz:
    *   - Location-Header?
    */
