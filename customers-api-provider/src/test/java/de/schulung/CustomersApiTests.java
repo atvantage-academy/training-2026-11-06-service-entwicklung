@@ -202,10 +202,10 @@ public class CustomersApiTests {
 
   /*
    *   - POST /kunden, Kunde im Body mit ID, Content-Type: application/json, Accept: application/json
-   *       -> 201, mitgeschickte ID wird ignoriert, Server vergibt eine neue ID
+   *       -> 400, eine ID darf nicht mitgeschickt werden
    */
   @Test
-  void given_customer_with_id_when_post_kunden_then_ignore_id() {
+  void given_customer_with_id_when_post_kunden_then_return_400() {
     var sentId = "00000000-0000-0000-0000-000000000001";
     given()
       .contentType(ContentType.JSON)
@@ -226,10 +226,10 @@ public class CustomersApiTests {
 
   /*
    *   - POST /kunden, Kunde im Body mit unbekannten Attributen, Content-Type: application/json, Accept: application/json
-   *       -> 201, unbekannte Attribute werden ignoriert und nicht zurückgegeben
+   *       -> 400, unbekannte Attribute sind nicht erlaubt
    */
   @Test
-  void given_customer_with_unknown_attributes_when_post_kunden_then_ignore_them() {
+  void given_customer_with_unknown_attributes_when_post_kunden_then_return_400() {
     given()
       .contentType(ContentType.JSON)
       .body("""
