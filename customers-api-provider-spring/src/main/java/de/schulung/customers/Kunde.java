@@ -3,6 +3,7 @@ package de.schulung.customers;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Past;
 import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
@@ -17,6 +18,8 @@ public class Kunde {
   @NotBlank
   @Size(max = 100)
   private String name;
+  // @JsonProperty("birth_date")
+  @Past
   private LocalDate birthdate;
   private String status;
 
