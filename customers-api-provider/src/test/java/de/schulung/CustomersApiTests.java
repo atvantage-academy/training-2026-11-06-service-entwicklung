@@ -4,7 +4,10 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -171,6 +174,28 @@ public class CustomersApiTests {
           "name": "%s"
         }
         """.formatted("X".repeat(101)))
+      .accept(ContentType.JSON)
+      .when()
+      .post("/kunden")
+      .then()
+      .statusCode(400);
+  }
+
+  /*
+   *   - POST /kunden, Geburtsdatum heute oder morgen
+   *       -> 400
+   */
+  @ParameterizedTest
+  @ValueSource(ints = {0, 1})
+  void given_customer_with_birthdate_today_or_tomorrow_when_post_kunden_then_return_400(int daysFromToday) {
+    given()
+      .contentType(ContentType.JSON)
+      .body("""
+        {
+          "name": "Tom Mayer",
+          "birthdate": "%s"
+        }
+        """.formatted(LocalDate.now().plusDays(daysFromToday)))
       .accept(ContentType.JSON)
       .when()
       .post("/kunden")
