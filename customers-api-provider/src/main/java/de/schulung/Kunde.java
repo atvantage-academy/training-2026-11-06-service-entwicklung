@@ -33,7 +33,7 @@ public class Kunde {
   @Column(name = "birth_date")
   @Past
   private LocalDate birthdate;
-  private String status;
+  private CustomerStatus status;
 
   public UUID getId() {
     return id;
@@ -59,11 +59,11 @@ public class Kunde {
     this.birthdate = birthdate;
   }
 
-  public String getStatus() {
+  public CustomerStatus getStatus() {
     return status;
   }
 
-  public void setStatus(String status) {
+  public void setStatus(CustomerStatus status) {
     this.status = status;
   }
 }
