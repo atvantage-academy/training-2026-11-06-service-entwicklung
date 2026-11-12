@@ -8,6 +8,8 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.UUID;
+
 import static org.hamcrest.Matchers.emptyOrNullString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -37,6 +39,7 @@ class CustomersApiTests {
       )
       .andExpect(status().isOk())
       .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+      .andExpect(jsonPath("$").isMap())
       .andExpect(jsonPath("$.items").isArray());
   }
 
@@ -243,7 +246,6 @@ class CustomersApiTests {
       .andExpect(status().isBadRequest());
   }
 
-  // TODO: GET /kunden/{id}
   /*
    * Positivfall:
    *   - POST /kunden -> 201, ID auslesen
@@ -255,5 +257,72 @@ class CustomersApiTests {
    *   - GET /kunden/{id} mit syntaktisch falscher ID (keine UUID)
    *      -> 400
    */
+
+  @Test
+  void given_customer_exists_when_get_customer_by_id_then_return_200_and_customer() throws Exception {
+
+    // SETUP
+
+    var result = mvc.perform(
+        post("/kunden")
+          .contentType(MediaType.APPLICATION_JSON)
+          .content("""
+              {
+                "name": "Tom Mayer",
+                "birthdate": "1990-01-01",
+                "status": "active"
+              }
+            """)
+          .accept(MediaType.APPLICATION_JSON)
+      )
+      .andExpect(status().isCreated())
+      .andReturn();
+
+    String id = JsonPath.read(
+      result.getResponse().getContentAsString(),
+      "$.id"
+    );
+
+    // TEST
+
+    mvc.perform(
+        get("/kunden/{id}", id)
+          .accept(MediaType.APPLICATION_JSON)
+      )
+      .andExpect(status().isOk())
+      .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+      .andExpect(jsonPath("$.id").value(id))
+      .andExpect(jsonPath("$.name").value("Tom Mayer"))
+      .andExpect(jsonPath("$.birthdate").value("1990-01-01"))
+      .andExpect(jsonPath("$.status").value("active"));
+
+  }
+
+  @Test
+  void given_customer_does_not_exist_when_get_customer_by_id_then_return_404() throws Exception {
+
+    // TODO: Anlegen, Löschen -> Kunde existiert nicht
+    String id = UUID.randomUUID().toString();
+
+    mvc.perform(
+        get("/kunden/{id}", id)
+          .accept(MediaType.APPLICATION_JSON)
+      )
+      .andExpect(status().isNotFound());
+
+  }
+
+  @Test
+  void given_invalid_id_when_get_customer_by_id_then_return_400() throws Exception {
+
+    String id = "gelbekatze";
+
+    mvc.perform(
+        get("/kunden/{id}", id)
+          .accept(MediaType.APPLICATION_JSON)
+      )
+      .andExpect(status().isBadRequest());
+
+  }
 
 }
