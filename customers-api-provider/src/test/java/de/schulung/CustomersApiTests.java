@@ -162,6 +162,23 @@ public class CustomersApiTests {
       .statusCode(400);
   }
 
+  @Test
+  void given_customer_with_name_too_long_when_post_kunden_then_return_400() {
+    given()
+      .contentType(ContentType.JSON)
+      .body("""
+        {
+          "name": "%s"
+        }
+        """.formatted("X".repeat(101)))
+      .accept(ContentType.JSON)
+      .when()
+      .post("/kunden")
+      .then()
+      .statusCode(400);
+  }
+
+
   /*
    *   - POST /kunden, Kunde im Body invalide (kein gültiges JSON), Content-Type: application/json, Accept: application/json
    *       -> 400

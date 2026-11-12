@@ -1,5 +1,9 @@
 package de.schulung;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -7,6 +11,9 @@ import java.util.UUID;
 public class Kunde {
 
   private UUID id;
+  @NotNull
+  @NotBlank
+  @Size(max = 100)
   private String name;
   private LocalDate birthdate;
   private String status;

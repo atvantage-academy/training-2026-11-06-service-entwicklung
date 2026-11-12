@@ -1,5 +1,7 @@
 package de.schulung;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Pattern;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
@@ -15,7 +17,6 @@ import java.net.URI;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.regex.Pattern;
 
 @Path("/kunden")
 public class CustomersResource {
@@ -32,18 +33,14 @@ public class CustomersResource {
     return response;
   }
 
-  // TODO ???
-  private static final Pattern UUID_PATTERN = Pattern.compile(
-    "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
-  );
-
   @GET
   @Produces(MediaType.APPLICATION_JSON)
   @Path("/{id}")
-  public Kunde findKundeById(@PathParam("id") String id) {
-    if(!UUID_PATTERN.matcher(id).matches()) {
-      throw new BadRequestException();
-    }
+  public Kunde findKundeById(
+    @PathParam("id")
+    @Pattern(regexp = "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
+    String id
+  ) {
     UUID uuid = UUID.fromString(id);
     var kunde = kunden.get(uuid);
     if(kunde == null) {
@@ -55,18 +52,13 @@ public class CustomersResource {
   @POST
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  public Response createKunde(Kunde kunde) {
+  public Response createKunde(@Valid Kunde kunde) {
     if(kunde == null) {
       return Response
         .status(Response.Status.BAD_REQUEST)
         .build();
     }
     if (kunde.getId() != null) {
-      return Response
-        .status(Response.Status.BAD_REQUEST)
-        .build();
-    }
-    if(kunde.getName() == null || kunde.getName().isBlank()) {
       return Response
         .status(Response.Status.BAD_REQUEST)
         .build();
