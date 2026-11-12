@@ -1,5 +1,10 @@
 package de.schulung.customers;
 
+import jakarta.validation.Valid;
+import jakarta.validation.Validator;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -15,45 +20,49 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 import java.net.URI;
-import java.time.LocalDate;
-import java.time.format.DateTimeParseException;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
-import java.util.regex.Pattern;
 
 @RestController
 @RequestMapping("/kunden")
 public class CustomersController {
 
   private static final String MERGE_PATCH_JSON = "application/merge-patch+json";
-  private static final int NAME_MAX_LENGTH = 100;
+  private static final String UUID_PATTERN =
+    "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$";
 
   // TODO: Provisorium
   private final Map<UUID, Kunde> kunden = new ConcurrentHashMap<>();
 
+  private final ObjectMapper objectMapper;
+  private final Validator validator;
+
+  public CustomersController(ObjectMapper objectMapper, Validator validator) {
+    this.objectMapper = objectMapper;
+    this.validator = validator;
+  }
+
   @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
   public CustomerListResponse getKunden(
-    @RequestParam(name = "name", required = false) String name,
-    @RequestParam(name = "state", required = false) String state
+    @RequestParam(name = "name", required = false)
+    @Size(min = 1, max = 100)
+    String name,
+    @RequestParam(name = "state", required = false)
+    @Pattern(regexp = "active|locked|disabled")
+    String state
   ) {
-    if (name != null && (name.isEmpty() || name.length() > NAME_MAX_LENGTH)) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
-    }
-    CustomerStatus status = null;
-    if (state != null) {
-      status = CustomerStatus
-        .fromValue(state)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST));
-    }
     var kundenObjekte = kunden
       .values()
       .stream()
       .filter(matchesName(name))
-      .filter(matchesStatus(status))
+      .filter(matchesStatus(state))
       .toList();
     var response = new CustomerListResponse();
     response.setItems(kundenObjekte);
@@ -65,36 +74,20 @@ public class CustomersController {
       || kunde.getName().toLowerCase().contains(name.toLowerCase());
   }
 
-  private static Predicate<Kunde> matchesStatus(CustomerStatus status) {
-    return kunde -> status == null || kunde.getStatus() == status;
-  }
-
-  // TODO ???
-  private static final Pattern UUID_PATTERN = Pattern.compile(
-    "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
-  );
-
-  private static UUID parseId(String id) {
-    if (!UUID_PATTERN.matcher(id).matches()) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
-    }
-    return UUID.fromString(id);
-  }
-
-  private static boolean isValidName(String name) {
-    return name != null && !name.isBlank() && name.length() <= NAME_MAX_LENGTH;
-  }
-
-  private static boolean isValid(Kunde kunde) {
-    return kunde.getId() == null && isValidName(kunde.getName());
+  private static Predicate<Kunde> matchesStatus(String status) {
+    return kunde -> status == null || status.equals(kunde.getStatus());
   }
 
   @GetMapping(
     value = "/{id}",
     produces = MediaType.APPLICATION_JSON_VALUE
   )
-  public Kunde findKundeById(@PathVariable("id") String id) {
-    UUID uuid = parseId(id);
+  public Kunde findKundeById(
+    @PathVariable("id")
+    @Pattern(regexp = UUID_PATTERN)
+    String id
+  ) {
+    UUID uuid = UUID.fromString(id);
     var kunde = kunden.get(uuid);
     if (kunde == null) {
       throw new ResponseStatusException(HttpStatus.NOT_FOUND);
@@ -106,14 +99,9 @@ public class CustomersController {
     consumes = MediaType.APPLICATION_JSON_VALUE,
     produces = MediaType.APPLICATION_JSON_VALUE
   )
-  public ResponseEntity<Kunde> createKunde(@RequestBody Kunde kunde) {
-    if (!isValid(kunde)) {
-      return ResponseEntity
-        .badRequest()
-        .build();
-    }
+  public ResponseEntity<Kunde> createKunde(@Valid @NotNull @RequestBody Kunde kunde) {
     if (kunde.getStatus() == null) {
-      kunde.setStatus(CustomerStatus.ACTIVE);
+      kunde.setStatus("active");
     }
     kunde.setId(UUID.randomUUID());
     kunden.put(kunde.getId(), kunde);
@@ -128,16 +116,18 @@ public class CustomersController {
     consumes = MediaType.APPLICATION_JSON_VALUE
   )
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  public void replaceKunde(@PathVariable("id") String id, @RequestBody Kunde kunde) {
-    UUID uuid = parseId(id);
-    if (!isValid(kunde)) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
-    }
+  public void replaceKunde(
+    @PathVariable("id")
+    @Pattern(regexp = UUID_PATTERN)
+    String id,
+    @Valid @NotNull @RequestBody Kunde kunde
+  ) {
+    UUID uuid = UUID.fromString(id);
     if (!kunden.containsKey(uuid)) {
       throw new ResponseStatusException(HttpStatus.NOT_FOUND);
     }
     if (kunde.getStatus() == null) {
-      kunde.setStatus(CustomerStatus.ACTIVE);
+      kunde.setStatus("active");
     }
     kunde.setId(uuid);
     kunden.put(uuid, kunde);
@@ -148,8 +138,13 @@ public class CustomersController {
     consumes = MERGE_PATCH_JSON
   )
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  public void updateKunde(@PathVariable("id") String id, @RequestBody Map<String, Object> patch) {
-    UUID uuid = parseId(id);
+  public void updateKunde(
+    @PathVariable("id")
+    @Pattern(regexp = UUID_PATTERN)
+    String id,
+    @RequestBody JsonNode patch
+  ) {
+    UUID uuid = UUID.fromString(id);
     var kunde = kunden.get(uuid);
     if (kunde == null) {
       throw new ResponseStatusException(HttpStatus.NOT_FOUND);
@@ -160,49 +155,27 @@ public class CustomersController {
     geaendert.setName(kunde.getName());
     geaendert.setBirthdate(kunde.getBirthdate());
     geaendert.setStatus(kunde.getStatus());
-    patch.forEach((feld, wert) -> applyPatch(geaendert, feld, wert));
-    kunden.put(uuid, geaendert);
-  }
-
-  private static void applyPatch(Kunde kunde, String feld, Object wert) {
-    switch (feld) {
-      case "name" -> {
-        if (!(wert instanceof String name) || !isValidName(name)) {
-          throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
-        }
-        kunde.setName(name);
-      }
-      case "birthdate" -> {
-        if (wert == null) {
-          kunde.setBirthdate(null);
-        } else if (wert instanceof String birthdate) {
-          try {
-            kunde.setBirthdate(LocalDate.parse(birthdate));
-          } catch (DateTimeParseException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
-          }
-        } else {
-          throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
-        }
-      }
-      case "status" -> {
-        if (!(wert instanceof String status)) {
-          throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
-        }
-        kunde.setStatus(
-          CustomerStatus
-            .fromValue(status)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST))
-        );
-      }
-      default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+    try {
+      objectMapper
+        .readerForUpdating(geaendert)
+        .readValue(patch);
+    } catch (JacksonException e) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, null, e);
     }
+    if (!validator.validate(geaendert).isEmpty()) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+    }
+    kunden.put(uuid, geaendert);
   }
 
   @DeleteMapping("/{id}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  public void deleteKunde(@PathVariable("id") String id) {
-    UUID uuid = parseId(id);
+  public void deleteKunde(
+    @PathVariable("id")
+    @Pattern(regexp = UUID_PATTERN)
+    String id
+  ) {
+    UUID uuid = UUID.fromString(id);
     if (kunden.remove(uuid) == null) {
       throw new ResponseStatusException(HttpStatus.NOT_FOUND);
     }
