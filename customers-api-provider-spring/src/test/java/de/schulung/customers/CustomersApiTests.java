@@ -2,12 +2,15 @@ package de.schulung.customers;
 
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.emptyOrNullString;
@@ -157,6 +160,42 @@ class CustomersApiTests {
         post("/kunden")
           .contentType(MediaType.APPLICATION_JSON)
           .content("{}")
+          .accept(MediaType.APPLICATION_JSON)
+      )
+      .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void given_customer_with_name_too_long_when_post_kunden_then_return_400() throws Exception {
+    mvc.perform(
+        post("/kunden")
+          .contentType(MediaType.APPLICATION_JSON)
+          .content("""
+              {
+                "name": "%s"
+              }
+            """.formatted("X".repeat(101)))
+          .accept(MediaType.APPLICATION_JSON)
+      )
+      .andExpect(status().isBadRequest());
+  }
+
+  /*
+   *   - POST /kunden, Geburtsdatum heute oder morgen
+   *       -> 400
+   */
+  @ParameterizedTest
+  @ValueSource(ints = {0, 1})
+  void given_customer_with_birthdate_today_or_tomorrow_when_post_kunden_then_return_400(int daysFromToday) throws Exception {
+    mvc.perform(
+        post("/kunden")
+          .contentType(MediaType.APPLICATION_JSON)
+          .content("""
+              {
+                "name": "Tom Mayer",
+                "birthdate": "%s"
+              }
+            """.formatted(LocalDate.now().plusDays(daysFromToday)))
           .accept(MediaType.APPLICATION_JSON)
       )
       .andExpect(status().isBadRequest());

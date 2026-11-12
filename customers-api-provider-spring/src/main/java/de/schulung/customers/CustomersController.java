@@ -1,5 +1,8 @@
 package de.schulung.customers;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -15,7 +18,6 @@ import java.net.URI;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.regex.Pattern;
 
 @RestController
 @RequestMapping("/kunden")
@@ -32,19 +34,15 @@ public class CustomersController {
     return response;
   }
 
-  // TODO ???
-  private static final Pattern UUID_PATTERN = Pattern.compile(
-    "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
-  );
-
   @GetMapping(
     value = "/{id}",
     produces = MediaType.APPLICATION_JSON_VALUE
   )
-  public Kunde findKundeById(@PathVariable("id") String id) {
-    if (!UUID_PATTERN.matcher(id).matches()) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
-    }
+  public Kunde findKundeById(
+    @PathVariable("id")
+    @Pattern(regexp = "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
+    String id
+  ) {
     UUID uuid = UUID.fromString(id);
     var kunde = kunden.get(uuid);
     if (kunde == null) {
@@ -57,17 +55,7 @@ public class CustomersController {
     consumes = MediaType.APPLICATION_JSON_VALUE,
     produces = MediaType.APPLICATION_JSON_VALUE
   )
-  public ResponseEntity<Kunde> createKunde(@RequestBody Kunde kunde) {
-    if (kunde.getId() != null) {
-      return ResponseEntity
-        .badRequest()
-        .build();
-    }
-    if (kunde.getName() == null || kunde.getName().isBlank()) {
-      return ResponseEntity
-        .badRequest()
-        .build();
-    }
+  public ResponseEntity<Kunde> createKunde(@Valid @NotNull @RequestBody Kunde kunde) {
     kunde.setId(UUID.randomUUID());
     kunden.put(kunde.getId(), kunde);
     URI location = URI.create("/kunden/" + kunde.getId());
