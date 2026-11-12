@@ -6,6 +6,7 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Map;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.emptyOrNullString;
@@ -32,6 +33,7 @@ public class CustomersApiTests {
         .then()
         .statusCode(200)
         .contentType(ContentType.JSON)
+        .body("$", instanceOf(Map.class))
         .body("items", is(notNullValue()))
       .body("items", is(instanceOf(List.class)));
   }

@@ -23,7 +23,9 @@ public class CustomersResource {
   @Produces(MediaType.APPLICATION_JSON)
   public CustomerListResponse getKunden() {
     var kundenObjekte = kunden.values();
-    return new CustomerListResponse(kundenObjekte);
+    var response = new CustomerListResponse();
+    response.setItems(kundenObjekte);
+    return response;
   }
 
   @POST
