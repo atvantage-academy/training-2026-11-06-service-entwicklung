@@ -1,5 +1,13 @@
 package de.schulung;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.inject.Inject;
+import jakarta.validation.Valid;
+import jakarta.validation.Validator;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
@@ -17,49 +25,49 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 
+import java.io.IOException;
 import java.net.URI;
-import java.time.LocalDate;
-import java.time.format.DateTimeParseException;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
-import java.util.regex.Pattern;
 
 @Path("/kunden")
 public class CustomersResource {
 
   private static final String MERGE_PATCH_JSON = "application/merge-patch+json";
-  private static final int NAME_MAX_LENGTH = 100;
+  private static final String UUID_PATTERN =
+    "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$";
 
   // TODO: Provisorium
   private final Map<UUID, Kunde> kunden = new ConcurrentHashMap<>();
 
+  @Inject
+  ObjectMapper objectMapper;
+  @Inject
+  Validator validator;
+
   @GET
   @Produces(MediaType.APPLICATION_JSON)
   public CustomerListResponse getKunden(
-    @QueryParam("name") String name,
-    @QueryParam("state") String state,
+    @QueryParam("name")
+    @Size(min = 1, max = 100)
+    String name,
+    @QueryParam("state")
+    @Pattern(regexp = "active|locked|disabled")
+    String state,
     @Context UriInfo uriInfo
   ) {
-    // Quarkus liefert für "?name=" null statt eines leeren Strings
+    // Quarkus liefert für "?name=" null statt eines leeren Strings,
+    // daher greift @Size hier nicht
     if (name == null && uriInfo.getQueryParameters().containsKey("name")) {
       throw new BadRequestException();
-    }
-    if (name != null && (name.isEmpty() || name.length() > NAME_MAX_LENGTH)) {
-      throw new BadRequestException();
-    }
-    CustomerStatus status = null;
-    if (state != null) {
-      status = CustomerStatus
-        .fromValue(state)
-        .orElseThrow(BadRequestException::new);
     }
     var kundenObjekte = kunden
       .values()
       .stream()
       .filter(matchesName(name))
-      .filter(matchesStatus(status))
+      .filter(matchesStatus(state))
       .toList();
     var response = new CustomerListResponse();
     response.setItems(kundenObjekte);
@@ -71,35 +79,19 @@ public class CustomersResource {
       || kunde.getName().toLowerCase().contains(name.toLowerCase());
   }
 
-  private static Predicate<Kunde> matchesStatus(CustomerStatus status) {
-    return kunde -> status == null || kunde.getStatus() == status;
-  }
-
-  // TODO ???
-  private static final Pattern UUID_PATTERN = Pattern.compile(
-    "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
-  );
-
-  private static UUID parseId(String id) {
-    if(!UUID_PATTERN.matcher(id).matches()) {
-      throw new BadRequestException();
-    }
-    return UUID.fromString(id);
-  }
-
-  private static boolean isValidName(String name) {
-    return name != null && !name.isBlank() && name.length() <= NAME_MAX_LENGTH;
-  }
-
-  private static boolean isValid(Kunde kunde) {
-    return kunde != null && kunde.getId() == null && isValidName(kunde.getName());
+  private static Predicate<Kunde> matchesStatus(String status) {
+    return kunde -> status == null || status.equals(kunde.getStatus());
   }
 
   @GET
   @Produces(MediaType.APPLICATION_JSON)
   @Path("/{id}")
-  public Kunde findKundeById(@PathParam("id") String id) {
-    UUID uuid = parseId(id);
+  public Kunde findKundeById(
+    @PathParam("id")
+    @Pattern(regexp = UUID_PATTERN)
+    String id
+  ) {
+    UUID uuid = UUID.fromString(id);
     var kunde = kunden.get(uuid);
     if(kunde == null) {
       throw new NotFoundException();
@@ -110,14 +102,9 @@ public class CustomersResource {
   @POST
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  public Response createKunde(Kunde kunde) {
-    if(!isValid(kunde)) {
-      return Response
-        .status(Response.Status.BAD_REQUEST)
-        .build();
-    }
+  public Response createKunde(@Valid @NotNull Kunde kunde) {
     if (kunde.getStatus() == null) {
-      kunde.setStatus(CustomerStatus.ACTIVE);
+      kunde.setStatus("active");
     }
     kunde.setId(UUID.randomUUID());
     kunden.put(kunde.getId(), kunde);
@@ -132,16 +119,18 @@ public class CustomersResource {
   @PUT
   @Consumes(MediaType.APPLICATION_JSON)
   @Path("/{id}")
-  public void replaceKunde(@PathParam("id") String id, Kunde kunde) {
-    UUID uuid = parseId(id);
-    if (!isValid(kunde)) {
-      throw new BadRequestException();
-    }
+  public void replaceKunde(
+    @PathParam("id")
+    @Pattern(regexp = UUID_PATTERN)
+    String id,
+    @Valid @NotNull Kunde kunde
+  ) {
+    UUID uuid = UUID.fromString(id);
     if (!kunden.containsKey(uuid)) {
       throw new NotFoundException();
     }
     if (kunde.getStatus() == null) {
-      kunde.setStatus(CustomerStatus.ACTIVE);
+      kunde.setStatus("active");
     }
     kunde.setId(uuid);
     kunden.put(uuid, kunde);
@@ -150,11 +139,13 @@ public class CustomersResource {
   @PATCH
   @Consumes(MERGE_PATCH_JSON)
   @Path("/{id}")
-  public void updateKunde(@PathParam("id") String id, Map<String, Object> patch) {
-    UUID uuid = parseId(id);
-    if (patch == null) {
-      throw new BadRequestException();
-    }
+  public void updateKunde(
+    @PathParam("id")
+    @Pattern(regexp = UUID_PATTERN)
+    String id,
+    @NotNull JsonNode patch
+  ) {
+    UUID uuid = UUID.fromString(id);
     var kunde = kunden.get(uuid);
     if (kunde == null) {
       throw new NotFoundException();
@@ -165,49 +156,27 @@ public class CustomersResource {
     geaendert.setName(kunde.getName());
     geaendert.setBirthdate(kunde.getBirthdate());
     geaendert.setStatus(kunde.getStatus());
-    patch.forEach((feld, wert) -> applyPatch(geaendert, feld, wert));
-    kunden.put(uuid, geaendert);
-  }
-
-  private static void applyPatch(Kunde kunde, String feld, Object wert) {
-    switch (feld) {
-      case "name" -> {
-        if (!(wert instanceof String name) || !isValidName(name)) {
-          throw new BadRequestException();
-        }
-        kunde.setName(name);
-      }
-      case "birthdate" -> {
-        if (wert == null) {
-          kunde.setBirthdate(null);
-        } else if (wert instanceof String birthdate) {
-          try {
-            kunde.setBirthdate(LocalDate.parse(birthdate));
-          } catch (DateTimeParseException e) {
-            throw new BadRequestException();
-          }
-        } else {
-          throw new BadRequestException();
-        }
-      }
-      case "status" -> {
-        if (!(wert instanceof String status)) {
-          throw new BadRequestException();
-        }
-        kunde.setStatus(
-          CustomerStatus
-            .fromValue(status)
-            .orElseThrow(BadRequestException::new)
-        );
-      }
-      default -> throw new BadRequestException();
+    try {
+      objectMapper
+        .readerForUpdating(geaendert)
+        .readValue(patch);
+    } catch (IOException e) {
+      throw new BadRequestException(e);
     }
+    if (!validator.validate(geaendert).isEmpty()) {
+      throw new BadRequestException();
+    }
+    kunden.put(uuid, geaendert);
   }
 
   @DELETE
   @Path("/{id}")
-  public void deleteKunde(@PathParam("id") String id) {
-    UUID uuid = parseId(id);
+  public void deleteKunde(
+    @PathParam("id")
+    @Pattern(regexp = UUID_PATTERN)
+    String id
+  ) {
+    UUID uuid = UUID.fromString(id);
     if (kunden.remove(uuid) == null) {
       throw new NotFoundException();
     }
