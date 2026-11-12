@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.emptyOrNullString;
@@ -249,7 +250,6 @@ public class CustomersApiTests {
       .statusCode(400);
   }
 
-  // TODO: GET /kunden/{id}
   /*
    * Positivfall:
    *   - POST /kunden -> 201, ID auslesen
@@ -302,6 +302,36 @@ public class CustomersApiTests {
       .body("birthdate", is(equalTo("1990-01-01")))
       .body("status", is(equalTo("active")));
 
+  }
+
+  @Test
+  void given_customer_does_not_exist_when_get_customer_by_id_then_return_404() {
+
+    // TODO: Anlegen, Löschen -> Kunde existiert nicht
+    String id = UUID.randomUUID().toString();
+
+    given()
+      .accept(ContentType.JSON)
+      .pathParam("id", id)
+      .when()
+      .get("/kunden/{id}")
+      .then()
+      .statusCode(404);
+
+  }
+
+  @Test
+  void given_invalid_id_when_get_customer_by_id_then_return_400() {
+
+    String id = "gelbekatze";
+
+    given()
+      .accept(ContentType.JSON)
+      .pathParam("id", id)
+      .when()
+      .get("/kunden/{id}")
+      .then()
+      .statusCode(400);
 
   }
 
