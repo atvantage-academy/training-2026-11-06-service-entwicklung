@@ -1,5 +1,7 @@
 package de.schulung.customers;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -53,17 +55,7 @@ public class CustomersController {
     consumes = MediaType.APPLICATION_JSON_VALUE,
     produces = MediaType.APPLICATION_JSON_VALUE
   )
-  public ResponseEntity<Kunde> createKunde(@RequestBody Kunde kunde) {
-    if (kunde.getId() != null) {
-      return ResponseEntity
-        .badRequest()
-        .build();
-    }
-    if (kunde.getName() == null || kunde.getName().isBlank()) {
-      return ResponseEntity
-        .badRequest()
-        .build();
-    }
+  public ResponseEntity<Kunde> createKunde(@Valid @NotNull @RequestBody Kunde kunde) {
     kunde.setId(UUID.randomUUID());
     kunden.put(kunde.getId(), kunde);
     URI location = URI.create("/kunden/" + kunde.getId());

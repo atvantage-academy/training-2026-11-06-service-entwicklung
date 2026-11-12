@@ -1,12 +1,21 @@
 package de.schulung.customers;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
 import java.time.LocalDate;
 import java.util.UUID;
 
 // TODO: Lombok
 public class Kunde {
 
+  @JsonProperty(access = JsonProperty.Access.READ_ONLY)
   private UUID id;
+  @NotNull
+  @NotBlank
+  @Size(max = 100)
   private String name;
   private LocalDate birthdate;
   private String status;

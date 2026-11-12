@@ -162,6 +162,21 @@ class CustomersApiTests {
       .andExpect(status().isBadRequest());
   }
 
+  @Test
+  void given_customer_with_name_too_long_when_post_kunden_then_return_400() throws Exception {
+    mvc.perform(
+        post("/kunden")
+          .contentType(MediaType.APPLICATION_JSON)
+          .content("""
+              {
+                "name": "%s"
+              }
+            """.formatted("X".repeat(101)))
+          .accept(MediaType.APPLICATION_JSON)
+      )
+      .andExpect(status().isBadRequest());
+  }
+
   /*
    *   - POST /kunden, Kunde im Body invalide (kein gültiges JSON), Content-Type: application/json, Accept: application/json
    *       -> 400
