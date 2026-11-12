@@ -262,4 +262,47 @@ public class CustomersApiTests {
    *      -> 400
    */
 
+  @Test
+  void given_customer_exists_when_get_customer_by_id_then_return_200_and_customer() {
+
+    // SETUP
+
+    var response = given()
+      .contentType(ContentType.JSON)
+      .body("""
+        {
+          "name": "Tom Mayer",
+          "birthdate": "1990-01-01",
+          "status": "active"
+        }
+      """)
+      .accept(ContentType.JSON)
+      .when()
+      .post("/kunden");
+
+    response.then()
+      .statusCode(201);
+
+    String id = response
+      .jsonPath()
+      .getString("id");
+
+    // TEST
+
+    given()
+      .accept(ContentType.JSON)
+      .pathParam("id", id)
+      .when()
+      .get("/kunden/{id}")
+      .then()
+      .statusCode(200)
+      .contentType(ContentType.JSON)
+      .body("id", is(equalTo(id)))
+      .body("name", is(equalTo("Tom Mayer")))
+      .body("birthdate", is(equalTo("1990-01-01")))
+      .body("status", is(equalTo("active")));
+
+
+  }
+
 }
