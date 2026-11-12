@@ -1,6 +1,7 @@
 package de.schulung;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.Consumes;
@@ -52,17 +53,7 @@ public class CustomersResource {
   @POST
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  public Response createKunde(@Valid Kunde kunde) {
-    if(kunde == null) {
-      return Response
-        .status(Response.Status.BAD_REQUEST)
-        .build();
-    }
-    if (kunde.getId() != null) {
-      return Response
-        .status(Response.Status.BAD_REQUEST)
-        .build();
-    }
+  public Response createKunde(@Valid @NotNull Kunde kunde) {
     kunde.setId(UUID.randomUUID());
     kunden.put(kunde.getId(), kunde);
     URI location = URI.create("/kunden/" + kunde.getId());
