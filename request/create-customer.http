@@ -1,0 +1,13 @@
+### Create Customer
+POST {{basepath}}/kunden
+Content-Type: application/json
+
+{
+  "name": "Tom Mayer",
+  "birthdate": "2020-05-19",
+  "status": "active"
+}
+
+###
+GET {{basepath}}/kunden
+Accept: application/json

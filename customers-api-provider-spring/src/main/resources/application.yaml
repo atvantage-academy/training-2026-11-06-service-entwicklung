@@ -1,3 +1,6 @@
 spring:
   application:
     name: customers-api-provider-spring
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: true
