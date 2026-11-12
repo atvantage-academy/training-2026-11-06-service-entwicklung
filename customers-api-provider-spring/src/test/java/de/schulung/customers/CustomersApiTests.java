@@ -354,13 +354,7 @@ class CustomersApiTests {
   @Test
   void given_customer_does_not_exist_when_get_customer_by_id_then_return_404() throws Exception {
 
-    String id = createKunde("""
-        {
-          "name": "Tom Mayer"
-        }
-      """);
-    mvc.perform(delete("/kunden/{id}", id))
-      .andExpect(status().isNoContent());
+    String id = createDeletedKunde();
 
     mvc.perform(
         get("/kunden/{id}", id)
@@ -396,6 +390,21 @@ class CustomersApiTests {
       result.getResponse().getContentAsString(),
       "$.id"
     );
+  }
+
+  /*
+   * Legt einen Kunden an und löscht ihn wieder.
+   * Die ID gehört damit garantiert zu keinem existierenden Kunden.
+   */
+  private String createDeletedKunde() throws Exception {
+    var id = createKunde("""
+        {
+          "name": "Tom Mayer"
+        }
+      """);
+    mvc.perform(delete("/kunden/{id}", id))
+      .andExpect(status().isNoContent());
+    return id;
   }
 
   private static String uniqueName() {
@@ -617,7 +626,7 @@ class CustomersApiTests {
   @Test
   void given_customer_does_not_exist_when_put_customer_then_return_404() throws Exception {
     mvc.perform(
-        put("/kunden/{id}", UUID.randomUUID().toString())
+        put("/kunden/{id}", createDeletedKunde())
           .contentType(MediaType.APPLICATION_JSON)
           .content("""
               {
@@ -754,7 +763,7 @@ class CustomersApiTests {
   @Test
   void given_customer_does_not_exist_when_patch_customer_then_return_404() throws Exception {
     mvc.perform(
-        patch("/kunden/{id}", UUID.randomUUID().toString())
+        patch("/kunden/{id}", createDeletedKunde())
           .contentType(MERGE_PATCH_JSON)
           .content("""
               {
@@ -868,7 +877,7 @@ class CustomersApiTests {
 
   @Test
   void given_customer_does_not_exist_when_delete_customer_then_return_404() throws Exception {
-    mvc.perform(delete("/kunden/{id}", UUID.randomUUID().toString()))
+    mvc.perform(delete("/kunden/{id}", createDeletedKunde()))
       .andExpect(status().isNotFound());
   }
 
