@@ -40,7 +40,7 @@ public class CustomersResource {
   @GET
   @Produces(MediaType.APPLICATION_JSON)
   @Path("/{id}")
-  public Kunde findByKundeById(@PathParam("id") String id) {
+  public Kunde findKundeById(@PathParam("id") String id) {
     if(!UUID_PATTERN.matcher(id).matches()) {
       throw new BadRequestException();
     }
