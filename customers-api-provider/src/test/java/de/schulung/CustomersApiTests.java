@@ -356,17 +356,7 @@ public class CustomersApiTests {
   @Test
   void given_customer_does_not_exist_when_get_customer_by_id_then_return_404() {
 
-    String id = createKunde("""
-        {
-          "name": "Tom Mayer"
-        }
-      """);
-    given()
-      .pathParam("id", id)
-      .when()
-      .delete("/kunden/{id}")
-      .then()
-      .statusCode(204);
+    String id = createDeletedKunde();
 
     given()
       .accept(ContentType.JSON)
@@ -405,6 +395,25 @@ public class CustomersApiTests {
       .extract()
       .jsonPath()
       .getString("id");
+  }
+
+  /*
+   * Legt einen Kunden an und löscht ihn wieder.
+   * Die ID gehört damit garantiert zu keinem existierenden Kunden.
+   */
+  private static String createDeletedKunde() {
+    var id = createKunde("""
+        {
+          "name": "Tom Mayer"
+        }
+      """);
+    given()
+      .pathParam("id", id)
+      .when()
+      .delete("/kunden/{id}")
+      .then()
+      .statusCode(204);
+    return id;
   }
 
   private static String uniqueName() {
@@ -640,7 +649,7 @@ public class CustomersApiTests {
   void given_customer_does_not_exist_when_put_customer_then_return_404() {
     given()
       .contentType(ContentType.JSON)
-      .pathParam("id", UUID.randomUUID().toString())
+      .pathParam("id", createDeletedKunde())
       .body("""
         {
           "name": "Tom Mayer"
@@ -793,7 +802,7 @@ public class CustomersApiTests {
   void given_customer_does_not_exist_when_patch_customer_then_return_404() {
     given()
       .contentType("application/merge-patch+json")
-      .pathParam("id", UUID.randomUUID().toString())
+      .pathParam("id", createDeletedKunde())
       .body("""
         {
           "status": "locked"
@@ -923,7 +932,7 @@ public class CustomersApiTests {
   @Test
   void given_customer_does_not_exist_when_delete_customer_then_return_404() {
     given()
-      .pathParam("id", UUID.randomUUID().toString())
+      .pathParam("id", createDeletedKunde())
       .when()
       .delete("/kunden/{id}")
       .then()
