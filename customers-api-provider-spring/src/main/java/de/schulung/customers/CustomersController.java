@@ -5,6 +5,7 @@ import jakarta.validation.Validator;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -29,6 +30,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/kunden")
+@RequiredArgsConstructor
 public class CustomersController {
 
   private static final String MERGE_PATCH_JSON = "application/merge-patch+json";
@@ -38,16 +40,6 @@ public class CustomersController {
   private final CustomersService customersService;
   private final ObjectMapper objectMapper;
   private final Validator validator;
-
-  public CustomersController(
-    CustomersService customersService,
-    ObjectMapper objectMapper,
-    Validator validator
-  ) {
-    this.customersService = customersService;
-    this.objectMapper = objectMapper;
-    this.validator = validator;
-  }
 
   @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
   public CustomerListResponse getKunden(

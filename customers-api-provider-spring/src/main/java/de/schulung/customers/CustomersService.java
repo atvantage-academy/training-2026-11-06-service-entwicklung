@@ -2,6 +2,7 @@ package de.schulung.customers;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -12,15 +13,12 @@ import java.util.stream.Stream;
 
 @Validated
 @Service
+@RequiredArgsConstructor
 public class CustomersService {
 
   private static final String DEFAULT_STATUS = "active";
 
   private final CustomersRepository repo;
-
-  public CustomersService(CustomersRepository repo) {
-    this.repo = repo;
-  }
 
   public Stream<Kunde> getCustomers(String name, String status) {
     return repo.search(name, status).stream();
