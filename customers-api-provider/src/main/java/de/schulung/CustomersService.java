@@ -1,6 +1,10 @@
 package de.schulung;
 
+import io.quarkus.runtime.BannerRuntimeConfig;
+import io.smallrye.config.inject.ConfigProducer;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.validation.Valid;
 
 import java.util.Map;
 import java.util.Optional;
@@ -25,7 +29,7 @@ public class CustomersService {
       .ofNullable(kunden.get(id));
   }
 
-  public void createCustomer(Kunde kunde) {
+  public void createCustomer(@Valid Kunde kunde) {
     kunde.setId(UUID.randomUUID());
     kunden.put(kunde.getId(), kunde);
   }
