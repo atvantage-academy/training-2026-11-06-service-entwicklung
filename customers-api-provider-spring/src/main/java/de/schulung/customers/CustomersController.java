@@ -25,10 +25,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 import java.net.URI;
-import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Predicate;
 
 @RestController
 @RequestMapping("/kunden")
@@ -38,13 +35,16 @@ public class CustomersController {
   private static final String UUID_PATTERN =
     "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$";
 
-  // TODO: Provisorium
-  private final Map<UUID, Kunde> kunden = new ConcurrentHashMap<>();
-
+  private final CustomersService customersService;
   private final ObjectMapper objectMapper;
   private final Validator validator;
 
-  public CustomersController(ObjectMapper objectMapper, Validator validator) {
+  public CustomersController(
+    CustomersService customersService,
+    ObjectMapper objectMapper,
+    Validator validator
+  ) {
+    this.customersService = customersService;
     this.objectMapper = objectMapper;
     this.validator = validator;
   }
@@ -58,24 +58,12 @@ public class CustomersController {
     @Pattern(regexp = "active|locked|disabled")
     String state
   ) {
-    var kundenObjekte = kunden
-      .values()
-      .stream()
-      .filter(matchesName(name))
-      .filter(matchesStatus(state))
+    var kundenObjekte = customersService
+      .getCustomers(name, state)
       .toList();
     var response = new CustomerListResponse();
     response.setItems(kundenObjekte);
     return response;
-  }
-
-  private static Predicate<Kunde> matchesName(String name) {
-    return kunde -> name == null
-      || kunde.getName().toLowerCase().contains(name.toLowerCase());
-  }
-
-  private static Predicate<Kunde> matchesStatus(String status) {
-    return kunde -> status == null || status.equals(kunde.getStatus());
   }
 
   @GetMapping(
@@ -88,11 +76,9 @@ public class CustomersController {
     String id
   ) {
     UUID uuid = UUID.fromString(id);
-    var kunde = kunden.get(uuid);
-    if (kunde == null) {
-      throw new ResponseStatusException(HttpStatus.NOT_FOUND);
-    }
-    return kunde;
+    return customersService
+      .getCustomerById(uuid)
+      .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
   }
 
   @PostMapping(
@@ -100,11 +86,7 @@ public class CustomersController {
     produces = MediaType.APPLICATION_JSON_VALUE
   )
   public ResponseEntity<Kunde> createKunde(@Valid @NotNull @RequestBody Kunde kunde) {
-    if (kunde.getStatus() == null) {
-      kunde.setStatus("active");
-    }
-    kunde.setId(UUID.randomUUID());
-    kunden.put(kunde.getId(), kunde);
+    customersService.createCustomer(kunde);
     URI location = URI.create("/kunden/" + kunde.getId());
     return ResponseEntity
       .created(location)
@@ -123,14 +105,9 @@ public class CustomersController {
     @Valid @NotNull @RequestBody Kunde kunde
   ) {
     UUID uuid = UUID.fromString(id);
-    if (!kunden.containsKey(uuid)) {
+    if (!customersService.replaceCustomer(uuid, kunde)) {
       throw new ResponseStatusException(HttpStatus.NOT_FOUND);
     }
-    if (kunde.getStatus() == null) {
-      kunde.setStatus("active");
-    }
-    kunde.setId(uuid);
-    kunden.put(uuid, kunde);
   }
 
   @PatchMapping(
@@ -145,10 +122,9 @@ public class CustomersController {
     @RequestBody JsonNode patch
   ) {
     UUID uuid = UUID.fromString(id);
-    var kunde = kunden.get(uuid);
-    if (kunde == null) {
-      throw new ResponseStatusException(HttpStatus.NOT_FOUND);
-    }
+    var kunde = customersService
+      .getCustomerById(uuid)
+      .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     // Änderungen auf einer Kopie anwenden, damit ein ungültiger Patch nichts verändert
     var geaendert = new Kunde();
     geaendert.setId(kunde.getId());
@@ -165,7 +141,9 @@ public class CustomersController {
     if (!validator.validate(geaendert).isEmpty()) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
     }
-    kunden.put(uuid, geaendert);
+    if (!customersService.replaceCustomer(uuid, geaendert)) {
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+    }
   }
 
   @DeleteMapping("/{id}")
@@ -176,7 +154,7 @@ public class CustomersController {
     String id
   ) {
     UUID uuid = UUID.fromString(id);
-    if (kunden.remove(uuid) == null) {
+    if (!customersService.deleteCustomer(uuid)) {
       throw new ResponseStatusException(HttpStatus.NOT_FOUND);
     }
   }
