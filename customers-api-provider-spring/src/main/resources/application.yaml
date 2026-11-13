@@ -5,3 +5,9 @@ spring:
     deserialization:
       fail-on-unknown-properties: true
       fail-on-ignored-properties: true
+  datasource:
+    url: jdbc:h2:./.local-db/customers
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: update
