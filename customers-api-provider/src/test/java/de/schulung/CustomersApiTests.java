@@ -1,5 +1,6 @@
 package de.schulung;
 
+import io.quarkus.test.TestTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
 import org.hamcrest.Matchers;
@@ -22,6 +23,7 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 
 @QuarkusTest
+@TestTransaction
 public class CustomersApiTests {
 
   // 1. GET /kunden -> 200
