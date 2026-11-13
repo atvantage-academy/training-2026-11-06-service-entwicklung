@@ -15,20 +15,23 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.net.URI;
-import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 @RestController
 @RequestMapping("/kunden")
 public class CustomersController {
 
-  // TODO: Provisorium
-  private final Map<UUID, Kunde> kunden = new ConcurrentHashMap<>();
+  private final CustomersService customersService;
+
+  public CustomersController(CustomersService customersService) {
+    this.customersService = customersService;
+  }
 
   @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
   public CustomerListResponse getKunden() {
-    var kundenObjekte = kunden.values();
+    var kundenObjekte = customersService
+      .getCustomers()
+      .toList();
     var response = new CustomerListResponse();
     response.setItems(kundenObjekte);
     return response;
@@ -44,11 +47,9 @@ public class CustomersController {
     String id
   ) {
     UUID uuid = UUID.fromString(id);
-    var kunde = kunden.get(uuid);
-    if (kunde == null) {
-      throw new ResponseStatusException(HttpStatus.NOT_FOUND);
-    }
-    return kunde;
+    return customersService
+      .getCustomerById(uuid)
+      .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
   }
 
   @PostMapping(
@@ -56,8 +57,7 @@ public class CustomersController {
     produces = MediaType.APPLICATION_JSON_VALUE
   )
   public ResponseEntity<Kunde> createKunde(@Valid @NotNull @RequestBody Kunde kunde) {
-    kunde.setId(UUID.randomUUID());
-    kunden.put(kunde.getId(), kunde);
+    customersService.createCustomer(kunde);
     URI location = URI.create("/kunden/" + kunde.getId());
     return ResponseEntity
       .created(location)
