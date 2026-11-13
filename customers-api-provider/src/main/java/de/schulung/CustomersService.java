@@ -1,9 +1,6 @@
 package de.schulung;
 
-import io.quarkus.runtime.BannerRuntimeConfig;
-import io.smallrye.config.inject.ConfigProducer;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 
 import java.util.Map;
