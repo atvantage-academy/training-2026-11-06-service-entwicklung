@@ -18,17 +18,23 @@ import java.net.URI;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
 @Path("/kunden")
 public class CustomersResource {
 
-  // TODO: Provisorium
-  private final Map<UUID, Kunde> kunden = new ConcurrentHashMap<>();
+  private final CustomersService customersService;
+
+  public CustomersResource(CustomersService customersService) {
+    this.customersService = customersService;
+  }
 
   @GET
   @Produces(MediaType.APPLICATION_JSON)
   public CustomerListResponse getKunden() {
-    var kundenObjekte = kunden.values();
+    var kundenObjekte = customersService
+      .getCustomers()
+      .toList();
     var response = new CustomerListResponse();
     response.setItems(kundenObjekte);
     return response;
@@ -43,19 +49,16 @@ public class CustomersResource {
     String id
   ) {
     UUID uuid = UUID.fromString(id);
-    var kunde = kunden.get(uuid);
-    if(kunde == null) {
-      throw new NotFoundException();
-    }
-    return kunde;
+    return customersService
+      .getCustomerById(uuid)
+      .orElseThrow(NotFoundException::new);
   }
 
   @POST
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
   public Response createKunde(@Valid @NotNull Kunde kunde) {
-    kunde.setId(UUID.randomUUID());
-    kunden.put(kunde.getId(), kunde);
+    customersService.createCustomer(kunde);
     URI location = URI.create("/kunden/" + kunde.getId());
     return Response
       .status(Response.Status.CREATED)
