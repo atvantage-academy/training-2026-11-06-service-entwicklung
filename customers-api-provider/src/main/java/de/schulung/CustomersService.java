@@ -4,21 +4,19 @@ import io.quarkus.panache.common.Parameters;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 
 @ApplicationScoped
+@RequiredArgsConstructor
 public class CustomersService {
 
   private static final String DEFAULT_STATUS = "active";
 
   private final CustomersRepository repo;
-
-  public CustomersService(CustomersRepository repo) {
-    this.repo = repo;
-  }
 
   public Stream<Kunde> getCustomers(String name, String status) {
     // nicht gesetzte Filter (null) schränken die Suche nicht ein

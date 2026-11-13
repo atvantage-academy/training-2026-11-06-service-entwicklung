@@ -23,12 +23,14 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
+import lombok.RequiredArgsConstructor;
 
 import java.io.IOException;
 import java.net.URI;
 import java.util.UUID;
 
 @Path("/kunden")
+@RequiredArgsConstructor
 public class CustomersResource {
 
   private static final String MERGE_PATCH_JSON = "application/merge-patch+json";
@@ -38,16 +40,6 @@ public class CustomersResource {
   private final CustomersService customersService;
   private final ObjectMapper objectMapper;
   private final Validator validator;
-
-  public CustomersResource(
-    CustomersService customersService,
-    ObjectMapper objectMapper,
-    Validator validator
-  ) {
-    this.customersService = customersService;
-    this.objectMapper = objectMapper;
-    this.validator = validator;
-  }
 
   @GET
   @Produces(MediaType.APPLICATION_JSON)
