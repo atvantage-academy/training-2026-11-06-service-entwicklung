@@ -2,7 +2,6 @@ package de.schulung;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.validation.Validator;
 import jakarta.validation.constraints.NotNull;
@@ -27,10 +26,7 @@ import jakarta.ws.rs.core.UriInfo;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Predicate;
 
 @Path("/kunden")
 public class CustomersResource {
@@ -39,13 +35,19 @@ public class CustomersResource {
   private static final String UUID_PATTERN =
     "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$";
 
-  // TODO: Provisorium
-  private final Map<UUID, Kunde> kunden = new ConcurrentHashMap<>();
+  private final CustomersService customersService;
+  private final ObjectMapper objectMapper;
+  private final Validator validator;
 
-  @Inject
-  ObjectMapper objectMapper;
-  @Inject
-  Validator validator;
+  public CustomersResource(
+    CustomersService customersService,
+    ObjectMapper objectMapper,
+    Validator validator
+  ) {
+    this.customersService = customersService;
+    this.objectMapper = objectMapper;
+    this.validator = validator;
+  }
 
   @GET
   @Produces(MediaType.APPLICATION_JSON)
@@ -63,24 +65,12 @@ public class CustomersResource {
     if (name == null && uriInfo.getQueryParameters().containsKey("name")) {
       throw new BadRequestException();
     }
-    var kundenObjekte = kunden
-      .values()
-      .stream()
-      .filter(matchesName(name))
-      .filter(matchesStatus(state))
+    var kundenObjekte = customersService
+      .getCustomers(name, state)
       .toList();
     var response = new CustomerListResponse();
     response.setItems(kundenObjekte);
     return response;
-  }
-
-  private static Predicate<Kunde> matchesName(String name) {
-    return kunde -> name == null
-      || kunde.getName().toLowerCase().contains(name.toLowerCase());
-  }
-
-  private static Predicate<Kunde> matchesStatus(String status) {
-    return kunde -> status == null || status.equals(kunde.getStatus());
   }
 
   @GET
@@ -92,22 +82,16 @@ public class CustomersResource {
     String id
   ) {
     UUID uuid = UUID.fromString(id);
-    var kunde = kunden.get(uuid);
-    if(kunde == null) {
-      throw new NotFoundException();
-    }
-    return kunde;
+    return customersService
+      .getCustomerById(uuid)
+      .orElseThrow(NotFoundException::new);
   }
 
   @POST
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
   public Response createKunde(@Valid @NotNull Kunde kunde) {
-    if (kunde.getStatus() == null) {
-      kunde.setStatus("active");
-    }
-    kunde.setId(UUID.randomUUID());
-    kunden.put(kunde.getId(), kunde);
+    customersService.createCustomer(kunde);
     URI location = URI.create("/kunden/" + kunde.getId());
     return Response
       .status(Response.Status.CREATED)
@@ -126,14 +110,9 @@ public class CustomersResource {
     @Valid @NotNull Kunde kunde
   ) {
     UUID uuid = UUID.fromString(id);
-    if (!kunden.containsKey(uuid)) {
+    if (!customersService.replaceCustomer(uuid, kunde)) {
       throw new NotFoundException();
     }
-    if (kunde.getStatus() == null) {
-      kunde.setStatus("active");
-    }
-    kunde.setId(uuid);
-    kunden.put(uuid, kunde);
   }
 
   @PATCH
@@ -146,10 +125,9 @@ public class CustomersResource {
     @NotNull JsonNode patch
   ) {
     UUID uuid = UUID.fromString(id);
-    var kunde = kunden.get(uuid);
-    if (kunde == null) {
-      throw new NotFoundException();
-    }
+    var kunde = customersService
+      .getCustomerById(uuid)
+      .orElseThrow(NotFoundException::new);
     // Änderungen auf einer Kopie anwenden, damit ein ungültiger Patch nichts verändert
     var geaendert = new Kunde();
     geaendert.setId(kunde.getId());
@@ -166,7 +144,9 @@ public class CustomersResource {
     if (!validator.validate(geaendert).isEmpty()) {
       throw new BadRequestException();
     }
-    kunden.put(uuid, geaendert);
+    if (!customersService.replaceCustomer(uuid, geaendert)) {
+      throw new NotFoundException();
+    }
   }
 
   @DELETE
@@ -177,7 +157,7 @@ public class CustomersResource {
     String id
   ) {
     UUID uuid = UUID.fromString(id);
-    if (kunden.remove(uuid) == null) {
+    if (!customersService.deleteCustomer(uuid)) {
       throw new NotFoundException();
     }
   }
